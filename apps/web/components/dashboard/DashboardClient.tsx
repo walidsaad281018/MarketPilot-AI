@@ -5,6 +5,7 @@ import AITopPickCard from "@/components/cards/AITopPickCard";
 import CryptoPriceChart from "@/components/dashboard/CryptoPriceChart";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import OpportunityGrid from "@/components/dashboard/OpportunityGrid";
+import PerformanceBreakdown from "@/components/dashboard/PerformanceBreakdown";
 import PerformanceCenter from "@/components/dashboard/PerformanceCenter";
 import DashboardHero from "@/components/sections/DashboardHero";
 
@@ -29,8 +30,7 @@ export default function DashboardClient({
   bitcoinChange24h,
   marketDataAvailable,
 }: DashboardClientProps) {
-  const [searchQuery, setSearchQuery] =
-    useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <>
@@ -41,14 +41,11 @@ export default function DashboardClient({
 
       {!marketDataAvailable && (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-          Live cryptocurrency prices are
-          temporarily unavailable.
+          Live cryptocurrency prices are temporarily unavailable.
         </div>
       )}
 
-      <MarketOverview
-        liveCryptoData={liveCryptoData}
-      />
+      <MarketOverview liveCryptoData={liveCryptoData} />
 
       <CryptoPriceChart />
 
@@ -71,6 +68,8 @@ export default function DashboardClient({
       />
 
       <PerformanceCenter />
+
+      <PerformanceBreakdown />
 
       <OpportunityGrid
         liveCryptoData={liveCryptoData}
