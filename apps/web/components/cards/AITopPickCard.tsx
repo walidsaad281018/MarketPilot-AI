@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type AITopPickCardProps = {
   assetName: string;
   symbol: string;
@@ -37,7 +39,8 @@ export default function AITopPickCard({
   trend,
   reasons,
 }: AITopPickCardProps) {
-  const isNegativeChange = change24h.startsWith("-");
+  const isNegativeChange =
+    change24h.startsWith("-");
 
   return (
     <section className="mb-12 overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-lg">
@@ -145,7 +148,9 @@ export default function AITopPickCard({
                 Trend
               </p>
 
-              <p className={`mt-2 font-bold ${trendStyles[trend]}`}>
+              <p
+                className={`mt-2 font-bold ${trendStyles[trend]}`}
+              >
                 {trend === "Bullish" && "↗ "}
                 {trend === "Bearish" && "↘ "}
                 {trend === "Neutral" && "→ "}
@@ -170,19 +175,17 @@ export default function AITopPickCard({
                   ✓
                 </span>
 
-                <span>
-                  {reason}
-                </span>
+                <span>{reason}</span>
               </li>
             ))}
           </ul>
 
-          <button
-            type="button"
-            className="mt-7 w-full rounded-xl bg-blue-600 px-5 py-3 font-bold text-white transition hover:bg-blue-500"
+          <Link
+            href={`/analysis/${symbol}`}
+            className="mt-7 block w-full rounded-xl bg-blue-600 px-5 py-3 text-center font-bold text-white transition hover:bg-blue-500"
           >
             View Transparent Analysis →
-          </button>
+          </Link>
 
           <p className="mt-3 text-center text-xs text-slate-500">
             Research insight only. Returns are not guaranteed.

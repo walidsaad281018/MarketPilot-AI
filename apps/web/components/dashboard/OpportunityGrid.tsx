@@ -11,6 +11,19 @@ import {
 
 type CategoryFilter = "Crypto" | "Stocks" | "ETFs";
 
+type LiveCryptoData = Record<
+  string,
+  {
+    currentPrice: string;
+    change24h: string;
+  }
+>;
+
+type OpportunityGridProps = {
+  liveCryptoData: LiveCryptoData;
+  searchQuery: string;
+};
+
 const categoryData: Record<CategoryFilter, Opportunity[]> = {
   Crypto: cryptoOpportunities,
   Stocks: stockOpportunities,
@@ -23,11 +36,20 @@ const categoryIcons: Record<CategoryFilter, string> = {
   ETFs: "📊",
 };
 
-export default function OpportunityGrid() {
+export default function OpportunityGrid({
+  liveCryptoData,
+  searchQuery,
+}: OpportunityGridProps) {
   const [activeCategory, setActiveCategory] =
     useState<CategoryFilter>("Crypto");
 
-  const opportunities = categoryData[activeCategory];
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
+  const opportunities = categoryData[activeCategory].filter(
+    (opportunity) =>
+      opportunity.asset.toLowerCase().includes(normalizedSearch) ||
+      opportunity.symbol.toLowerCase().includes(normalizedSearch)
+  );
 
   return (
     <section className="pb-16">
@@ -42,12 +64,12 @@ export default function OpportunityGrid() {
           </h2>
 
           <p className="mt-2 text-sm text-slate-500">
-            Showing 20 of 60 demonstration opportunities.
+            Showing {opportunities.length} of 20 opportunities.
           </p>
         </div>
 
         <div className="rounded-full bg-amber-100 px-4 py-2 text-xs font-bold text-amber-700">
-          Demo data
+          Scores are demo data
         </div>
       </div>
 
@@ -68,6 +90,7 @@ export default function OpportunityGrid() {
               }
             >
               {categoryIcons[typedCategory]} {typedCategory}
+
               <span
                 className={
                   isActive
@@ -82,14 +105,35 @@ export default function OpportunityGrid() {
         })}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {opportunities.map((opportunity) => (
-          <OpportunityCard
-            key={`${opportunity.category}-${opportunity.symbol}`}
-            {...opportunity}
-          />
-        ))}
-      </div>
+      {opportunities.length > 0 ? (
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {opportunities.map((opportunity) => {
+            const liveData =
+              activeCategory === "Crypto"
+                ? liveCryptoData[opportunity.symbol]
+                : undefined;
+
+            return (
+              <OpportunityCard
+                key={`${opportunity.category}-${opportunity.symbol}`}
+                {...opportunity}
+                currentPrice={liveData?.currentPrice}
+                change24h={liveData?.change24h}
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+          <h3 className="text-2xl font-bold text-slate-900">
+            No opportunities found
+          </h3>
+
+          <p className="mt-3 text-slate-500">
+            Try another asset name or ticker symbol.
+          </p>
+        </div>
+      )}
     </section>
   );
 }
