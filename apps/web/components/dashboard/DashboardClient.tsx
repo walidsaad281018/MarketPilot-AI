@@ -5,6 +5,7 @@ import AITopPickCard from "@/components/cards/AITopPickCard";
 import CryptoPriceChart from "@/components/dashboard/CryptoPriceChart";
 import MarketOverview from "@/components/dashboard/MarketOverview";
 import OpportunityGrid from "@/components/dashboard/OpportunityGrid";
+import PerformanceCenter from "@/components/dashboard/PerformanceCenter";
 import DashboardHero from "@/components/sections/DashboardHero";
 
 type LiveCryptoData = Record<
@@ -68,6 +69,8 @@ export default function DashboardClient({
           "Market sentiment currently supports the broader trend.",
         ]}
       />
+
+      <PerformanceCenter />
 
       <OpportunityGrid
         liveCryptoData={liveCryptoData}
