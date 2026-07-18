@@ -37,8 +37,10 @@ const statusStyles: Record<
 > = {
   Successful:
     "bg-emerald-100 text-emerald-700",
-  Unsuccessful: "bg-red-100 text-red-700",
-  Pending: "bg-amber-100 text-amber-700",
+  Unsuccessful:
+    "bg-red-100 text-red-700",
+  Pending:
+    "bg-amber-100 text-amber-700",
 };
 
 export default function PerformanceDashboard() {
@@ -129,38 +131,16 @@ export default function PerformanceDashboard() {
               </h2>
 
               <p className="mt-3 max-w-4xl text-sm leading-6 text-blue-800">
-                MarketPilot calculates the target
-                price and actual return from the
-                stored entry and evaluation prices.
-                The result is then classified
-                automatically as successful,
-                unsuccessful or pending.
+                MarketPilot calculates target price
+                and actual return from stored prices,
+                then assigns the verification result
+                automatically.
               </p>
             </div>
 
             <span className="rounded-full bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm">
               Engine active
             </span>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <RuleCard
-              number="01"
-              title="Calculate target"
-              description="Target price is calculated from the entry price and target-return percentage."
-            />
-
-            <RuleCard
-              number="02"
-              title="Calculate outcome"
-              description="Actual return is calculated from the entry price and final evaluation price."
-            />
-
-            <RuleCard
-              number="03"
-              title="Assign status"
-              description="The engine compares actual return with the original target and assigns the result."
-            />
           </div>
         </section>
 
@@ -248,8 +228,8 @@ export default function PerformanceDashboard() {
               </h2>
 
               <p className="mt-1 text-sm text-slate-500">
-                Detailed calculations from newest
-                recommendation to oldest.
+                Select any record to open its complete
+                recommendation audit trail.
               </p>
             </div>
 
@@ -287,10 +267,6 @@ export default function PerformanceDashboard() {
                     </TableHeading>
 
                     <TableHeading>
-                      Target
-                    </TableHeading>
-
-                    <TableHeading>
                       Target price
                     </TableHeading>
 
@@ -303,15 +279,11 @@ export default function PerformanceDashboard() {
                     </TableHeading>
 
                     <TableHeading>
-                      Target reached
-                    </TableHeading>
-
-                    <TableHeading>
                       Status
                     </TableHeading>
 
                     <TableHeading>
-                      Analysis
+                      Audit trail
                     </TableHeading>
                   </tr>
                 </thead>
@@ -351,44 +323,14 @@ export default function PerformanceDashboard() {
           <div className="border-t border-slate-200 bg-blue-50 px-6 py-4">
             <p className="text-xs leading-5 text-blue-700">
               These records currently use
-              demonstration market prices. In
-              production, entry and evaluation prices
-              will be captured from market-data
-              providers and stored with permanent
-              timestamps.
+              demonstration prices. Production
+              records will use database-backed market
+              data and permanent timestamps.
             </p>
           </div>
         </section>
       </div>
     </main>
-  );
-}
-
-type RuleCardProps = {
-  number: string;
-  title: string;
-  description: string;
-};
-
-function RuleCard({
-  number,
-  title,
-  description,
-}: RuleCardProps) {
-  return (
-    <article className="rounded-2xl bg-white p-5 shadow-sm">
-      <p className="text-sm font-black text-blue-600">
-        {number}
-      </p>
-
-      <h3 className="mt-2 font-bold text-slate-900">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-sm leading-6 text-slate-500">
-        {description}
-      </p>
-    </article>
   );
 }
 
@@ -506,23 +448,15 @@ function RecommendationRow({
       </TableCell>
 
       <TableCell>
-        <span className="font-bold text-blue-700">
-          +{record.targetReturn.toFixed(1)}%
-        </span>
-      </TableCell>
-
-      <TableCell>
         {formatPrice(record.targetPrice)}
       </TableCell>
 
       <TableCell>
-        {record.evaluationPrice === null ? (
-          <span className="text-slate-400">
-            Not available
-          </span>
-        ) : (
-          formatPrice(record.evaluationPrice)
-        )}
+        {record.evaluationPrice === null
+          ? "Not available"
+          : formatPrice(
+              record.evaluationPrice,
+            )}
       </TableCell>
 
       <TableCell>
@@ -544,12 +478,6 @@ function RecommendationRow({
       </TableCell>
 
       <TableCell>
-        <TargetReachedBadge
-          targetReached={record.targetReached}
-        />
-      </TableCell>
-
-      <TableCell>
         <span
           className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
             statusStyles[record.status]
@@ -561,43 +489,13 @@ function RecommendationRow({
 
       <TableCell>
         <Link
-          href={`/analysis/${record.symbol}`}
-          className="font-bold text-blue-600 transition hover:text-blue-800"
+          href={`/performance/${record.id}`}
+          className="inline-flex rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-600"
         >
-          View →
+          Open record →
         </Link>
       </TableCell>
     </tr>
-  );
-}
-
-type TargetReachedBadgeProps = {
-  targetReached: boolean | null;
-};
-
-function TargetReachedBadge({
-  targetReached,
-}: TargetReachedBadgeProps) {
-  if (targetReached === null) {
-    return (
-      <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500">
-        Pending
-      </span>
-    );
-  }
-
-  if (targetReached) {
-    return (
-      <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-        ✓ Yes
-      </span>
-    );
-  }
-
-  return (
-    <span className="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-700">
-      ✕ No
-    </span>
   );
 }
 
@@ -641,9 +539,10 @@ function calculateMetrics(
     (record) => record.status === "Pending",
   );
 
-  const verified = records.filter(
-    (record) => record.status !== "Pending",
-  );
+  const verified = [
+    ...successful,
+    ...unsuccessful,
+  ];
 
   const verifiedReturns = verified
     .map((record) => record.actualReturn)
