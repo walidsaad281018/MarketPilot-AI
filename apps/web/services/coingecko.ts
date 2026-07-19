@@ -1,192 +1,93 @@
-export type CryptoPrice = {
+export type CryptoPriceData = {
   usd: number;
   usd_24h_change: number;
 };
 
-export type CryptoPriceResponse = Record<
+export type CryptoPricesResponse = Record<
   string,
-  CryptoPrice
+  CryptoPriceData
 >;
 
-export type MarketChartPoint = [
-  timestamp: number,
-  value: number,
-];
-
-export type CryptoMarketChartResponse = {
-  prices: MarketChartPoint[];
-  market_caps: MarketChartPoint[];
-  total_volumes: MarketChartPoint[];
+export type CryptoMarketChart = {
+  prices: [number, number][];
 };
 
-type CacheEntry<T> = {
-  data: T;
-  savedAt: number;
+type PriceCacheEntry = {
+  data: CryptoPricesResponse;
+  expiresAt: number;
 };
 
-type CoinGeckoCache = {
-  prices: Map<
-    string,
-    CacheEntry<CryptoPriceResponse>
-  >;
-  charts: Map<
-    string,
-    CacheEntry<CryptoMarketChartResponse>
-  >;
+type ChartCacheEntry = {
+  data: CryptoMarketChart;
+  expiresAt: number;
 };
-
-const COINGECKO_BASE_URL =
-  "https://api.coingecko.com/api/v3";
 
 const PRICE_CACHE_DURATION_MS = 60_000;
 const CHART_CACHE_DURATION_MS = 5 * 60_000;
 
-const PRICE_REVALIDATION_SECONDS = 60;
-const CHART_REVALIDATION_SECONDS = 300;
+const MAX_RETRY_ATTEMPTS = 3;
+const INITIAL_RETRY_DELAY_MS = 1_000;
 
-const globalForCoinGecko = globalThis as typeof globalThis & {
-  coinGeckoCache?: CoinGeckoCache;
-};
+const priceCache = new Map<
+  string,
+  PriceCacheEntry
+>();
 
-const cache: CoinGeckoCache =
-  globalForCoinGecko.coinGeckoCache ?? {
-    prices: new Map(),
-    charts: new Map(),
-  };
-
-globalForCoinGecko.coinGeckoCache = cache;
-
-function sleep(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-function isFresh<T>(
-  entry: CacheEntry<T> | undefined,
-  durationMs: number,
-): entry is CacheEntry<T> {
-  if (!entry) {
-    return false;
-  }
-
-  return Date.now() - entry.savedAt < durationMs;
-}
-
-function createHeaders(): HeadersInit {
-  const demoApiKey =
-    process.env.COINGECKO_DEMO_API_KEY;
-
-  if (!demoApiKey) {
-    return {
-      Accept: "application/json",
-    };
-  }
-
-  return {
-    Accept: "application/json",
-    "x-cg-demo-api-key": demoApiKey,
-  };
-}
-
-async function fetchCoinGeckoJson<T>(
-  url: string,
-  revalidationSeconds: number,
-): Promise<T> {
-  const maximumAttempts = 3;
-
-  for (
-    let attempt = 0;
-    attempt < maximumAttempts;
-    attempt += 1
-  ) {
-    const response = await fetch(url, {
-      headers: createHeaders(),
-      next: {
-        revalidate: revalidationSeconds,
-      },
-    });
-
-    if (response.ok) {
-      return response.json() as Promise<T>;
-    }
-
-    if (response.status !== 429) {
-      throw new Error(
-        `CoinGecko request failed with status ${response.status}`,
-      );
-    }
-
-    const retryAfterHeader =
-      response.headers.get("retry-after");
-
-    const retryAfterSeconds = retryAfterHeader
-      ? Number(retryAfterHeader)
-      : Number.NaN;
-
-    const delayMilliseconds =
-      Number.isFinite(retryAfterSeconds) &&
-      retryAfterSeconds > 0
-        ? retryAfterSeconds * 1_000
-        : 1_000 * 2 ** attempt;
-
-    if (attempt < maximumAttempts - 1) {
-      await sleep(delayMilliseconds);
-    }
-  }
-
-  throw new Error(
-    "CoinGecko rate limit exceeded after multiple attempts.",
-  );
-}
+const chartCache = new Map<
+  string,
+  ChartCacheEntry
+>();
 
 export async function getCryptoPrices(
-  coinIds: readonly string[],
-): Promise<CryptoPriceResponse> {
-  const normalizedCoinIds = [...coinIds]
+  coinIds: string[],
+): Promise<CryptoPricesResponse> {
+  const normalizedIds = normalizeCoinIds(coinIds);
+
+  if (normalizedIds.length === 0) {
+    return {};
+  }
+
+  const cacheKey = normalizedIds
+    .slice()
     .sort()
     .join(",");
 
   const cachedEntry =
-    cache.prices.get(normalizedCoinIds);
+    priceCache.get(cacheKey);
 
   if (
-    isFresh(
-      cachedEntry,
-      PRICE_CACHE_DURATION_MS,
-    )
+    cachedEntry &&
+    Date.now() < cachedEntry.expiresAt
   ) {
     return cachedEntry.data;
   }
 
-  const query = new URLSearchParams({
-    ids: normalizedCoinIds,
-    vs_currencies: "usd",
-    include_24hr_change: "true",
-  });
-
-  const url =
-    `${COINGECKO_BASE_URL}/simple/price?${query}`;
-
   try {
     const data =
-      await fetchCoinGeckoJson<CryptoPriceResponse>(
-        url,
-        PRICE_REVALIDATION_SECONDS,
+      await requestWithRetry<CryptoPricesResponse>(
+        createSimplePriceUrl(normalizedIds),
       );
 
-    cache.prices.set(normalizedCoinIds, {
-      data,
-      savedAt: Date.now(),
+    const validatedData =
+      validateCryptoPrices(
+        data,
+        normalizedIds,
+      );
+
+    priceCache.set(cacheKey, {
+      data: validatedData,
+      expiresAt:
+        Date.now() +
+        PRICE_CACHE_DURATION_MS,
     });
 
-    return data;
+    return validatedData;
   } catch (error) {
-    /*
-     * If CoinGecko is temporarily unavailable,
-     * continue serving the last successful result.
-     */
     if (cachedEntry) {
+      console.warn(
+        "Using cached cryptocurrency prices because CoinGecko is temporarily unavailable.",
+      );
+
       return cachedEntry.data;
     }
 
@@ -196,52 +97,279 @@ export async function getCryptoPrices(
 
 export async function getCryptoMarketChart(
   coinId: string,
-  days: number,
-): Promise<CryptoMarketChartResponse> {
-  const cacheKey = `${coinId}-${days}`;
+  days = 7,
+): Promise<CryptoMarketChart> {
+  const normalizedCoinId = coinId
+    .trim()
+    .toLowerCase();
 
-  const cachedEntry =
-    cache.charts.get(cacheKey);
+  if (!normalizedCoinId) {
+    throw new Error(
+      "A CoinGecko coin ID is required.",
+    );
+  }
 
   if (
-    isFresh(
-      cachedEntry,
-      CHART_CACHE_DURATION_MS,
-    )
+    !Number.isFinite(days) ||
+    days <= 0
+  ) {
+    throw new Error(
+      "Chart days must be a positive number.",
+    );
+  }
+
+  const normalizedDays =
+    Math.floor(days);
+
+  const cacheKey =
+    `${normalizedCoinId}:${normalizedDays}`;
+
+  const cachedEntry =
+    chartCache.get(cacheKey);
+
+  if (
+    cachedEntry &&
+    Date.now() < cachedEntry.expiresAt
   ) {
     return cachedEntry.data;
   }
 
+  try {
+    const data =
+      await requestWithRetry<CryptoMarketChart>(
+        createMarketChartUrl(
+          normalizedCoinId,
+          normalizedDays,
+        ),
+      );
+
+    const validatedData =
+      validateMarketChart(data);
+
+    chartCache.set(cacheKey, {
+      data: validatedData,
+      expiresAt:
+        Date.now() +
+        CHART_CACHE_DURATION_MS,
+    });
+
+    return validatedData;
+  } catch (error) {
+    if (cachedEntry) {
+      console.warn(
+        `Using cached market chart for ${normalizedCoinId} because CoinGecko is temporarily unavailable.`,
+      );
+
+      return cachedEntry.data;
+    }
+
+    throw error;
+  }
+}
+
+function createSimplePriceUrl(
+  coinIds: string[],
+): string {
+  const query = new URLSearchParams({
+    ids: coinIds.join(","),
+    vs_currencies: "usd",
+    include_24hr_change: "true",
+  });
+
+  return `https://api.coingecko.com/api/v3/simple/price?${query.toString()}`;
+}
+
+function createMarketChartUrl(
+  coinId: string,
+  days: number,
+): string {
   const query = new URLSearchParams({
     vs_currency: "usd",
     days: String(days),
   });
 
-  const url =
-    `${COINGECKO_BASE_URL}/coins/${coinId}/market_chart?${query}`;
+  return `https://api.coingecko.com/api/v3/coins/${encodeURIComponent(
+    coinId,
+  )}/market_chart?${query.toString()}`;
+}
 
-  try {
-    const data =
-      await fetchCoinGeckoJson<CryptoMarketChartResponse>(
-        url,
-        CHART_REVALIDATION_SECONDS,
-      );
+async function requestWithRetry<T>(
+  url: string,
+): Promise<T> {
+  let lastError: unknown;
 
-    cache.charts.set(cacheKey, {
-      data,
-      savedAt: Date.now(),
-    });
+  for (
+    let attempt = 1;
+    attempt <= MAX_RETRY_ATTEMPTS;
+    attempt += 1
+  ) {
+    try {
+      return await requestJson<T>(url);
+    } catch (error) {
+      lastError = error;
 
-    return data;
-  } catch (error) {
-    /*
-     * Use the most recent successful chart while
-     * the external provider is rate-limited.
-     */
-    if (cachedEntry) {
-      return cachedEntry.data;
+      if (
+        attempt === MAX_RETRY_ATTEMPTS ||
+        !shouldRetry(error)
+      ) {
+        break;
+      }
+
+      const delay =
+        INITIAL_RETRY_DELAY_MS *
+        2 ** (attempt - 1);
+
+      await wait(delay);
+    }
+  }
+
+  if (lastError instanceof Error) {
+    throw lastError;
+  }
+
+  throw new Error(
+    "An unknown CoinGecko error occurred.",
+  );
+}
+
+async function requestJson<T>(
+  url: string,
+): Promise<T> {
+  const apiKey =
+    process.env.COINGECKO_DEMO_API_KEY?.trim();
+
+  const response = await fetch(url, {
+    headers: apiKey
+      ? {
+          "x-cg-demo-api-key": apiKey,
+        }
+      : undefined,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new CoinGeckoRequestError(
+      response.status,
+      `CoinGecko request failed with status ${response.status}.`,
+    );
+  }
+
+  return (await response.json()) as T;
+}
+
+function validateCryptoPrices(
+  data: CryptoPricesResponse,
+  requestedIds: string[],
+): CryptoPricesResponse {
+  const validated:
+    CryptoPricesResponse = {};
+
+  for (const coinId of requestedIds) {
+    const value = data[coinId];
+
+    if (
+      !value ||
+      typeof value.usd !== "number" ||
+      !Number.isFinite(value.usd)
+    ) {
+      continue;
     }
 
-    throw error;
+    validated[coinId] = {
+      usd: value.usd,
+      usd_24h_change:
+        typeof value.usd_24h_change ===
+          "number" &&
+        Number.isFinite(
+          value.usd_24h_change,
+        )
+          ? value.usd_24h_change
+          : 0,
+    };
+  }
+
+  return validated;
+}
+
+function validateMarketChart(
+  data: CryptoMarketChart,
+): CryptoMarketChart {
+  if (!Array.isArray(data.prices)) {
+    throw new Error(
+      "CoinGecko returned invalid market-chart data.",
+    );
+  }
+
+  const prices: [number, number][] =
+    data.prices.filter(
+      (
+        item,
+      ): item is [number, number] =>
+        Array.isArray(item) &&
+        item.length >= 2 &&
+        typeof item[0] === "number" &&
+        Number.isFinite(item[0]) &&
+        typeof item[1] === "number" &&
+        Number.isFinite(item[1]),
+    );
+
+  return {
+    prices,
+  };
+}
+
+function normalizeCoinIds(
+  coinIds: string[],
+): string[] {
+  return Array.from(
+    new Set(
+      coinIds
+        .map((coinId) =>
+          coinId
+            .trim()
+            .toLowerCase(),
+        )
+        .filter(Boolean),
+    ),
+  );
+}
+
+function shouldRetry(
+  error: unknown,
+): boolean {
+  if (
+    error instanceof
+    CoinGeckoRequestError
+  ) {
+    return (
+      error.status === 429 ||
+      error.status >= 500
+    );
+  }
+
+  return true;
+}
+
+function wait(
+  milliseconds: number,
+): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+
+class CoinGeckoRequestError extends Error {
+  readonly status: number;
+
+  constructor(
+    status: number,
+    message: string,
+  ) {
+    super(message);
+
+    this.name =
+      "CoinGeckoRequestError";
+
+    this.status = status;
   }
 }

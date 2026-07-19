@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import QuoteFreshnessPanel from "@/components/market/QuoteFreshnessPanel";
 import { getRecommendationById } from "@/data/getRecommendation";
 import type {
   RecommendationRecord,
@@ -393,9 +394,8 @@ function LivePreviewSection({
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
             This preview compares the original entry
             price and target with the latest available
-            market quote. It is informational and
-            does not overwrite the stored audit
-            result.
+            market quote. It does not overwrite the
+            stored historical result.
           </p>
         </div>
 
@@ -440,7 +440,7 @@ function LivePreviewSection({
             />
           </div>
 
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <div className="mt-6 grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-white bg-white/80 p-5">
               <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
                 Provider information
@@ -473,49 +473,51 @@ function LivePreviewSection({
                         )
                   }
                 />
-
-                <DetailRow
-                  label="MarketPilot fetched at"
-                  value={formatDateTimeUtc(
-                    livePreview.quote.fetchedAt,
-                  )}
-                />
               </dl>
             </div>
 
-            <div className="rounded-2xl bg-indigo-950 p-5 text-white">
-              <p className="text-xs font-bold uppercase tracking-wide text-indigo-300">
-                Live comparison explanation
-              </p>
+            <QuoteFreshnessPanel
+              freshness={
+                livePreview.quote.freshness
+              }
+              providerUpdatedAt={
+                livePreview.quote
+                  .providerUpdatedAt
+              }
+              fetchedAt={
+                livePreview.quote.fetchedAt
+              }
+            />
+          </div>
 
-              <p className="mt-4 text-sm leading-7 text-indigo-100">
-                The original entry price was{" "}
-                {formatPrice(
-                  recommendation.entryPrice,
-                )}
-                . The current market price is{" "}
-                {formatPrice(
-                  livePreview.quote.price,
-                )}
-                , producing a hypothetical return of{" "}
-                {formatReturn(
-                  livePreview.currentReturn,
-                )}
-                . Based only on the original target
-                of +
-                {recommendation.targetReturn.toFixed(
-                  2,
-                )}
-                %, this would currently be classified
-                as{" "}
-                <strong>
-                  {
-                    livePreview.hypotheticalStatus
-                  }
-                </strong>
-                .
-              </p>
-            </div>
+          <div className="mt-6 rounded-2xl bg-indigo-950 p-5 text-white">
+            <p className="text-xs font-bold uppercase tracking-wide text-indigo-300">
+              Live comparison explanation
+            </p>
+
+            <p className="mt-4 text-sm leading-7 text-indigo-100">
+              The original entry price was{" "}
+              {formatPrice(
+                recommendation.entryPrice,
+              )}
+              . The current market price is{" "}
+              {formatPrice(
+                livePreview.quote.price,
+              )}
+              , producing a hypothetical return of{" "}
+              {formatReturn(
+                livePreview.currentReturn,
+              )}
+              . Based only on the original target of +
+              {recommendation.targetReturn.toFixed(
+                2,
+              )}
+              %, this would currently be classified as{" "}
+              <strong>
+                {livePreview.hypotheticalStatus}
+              </strong>
+              .
+            </p>
           </div>
         </>
       ) : (
@@ -851,19 +853,4 @@ function formatDate(value: string): string {
     month: "short",
     year: "numeric",
   }).format(new Date(`${value}T00:00:00`));
-}
-
-function formatDateTimeUtc(
-  value: string,
-): string {
-  return `${new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZone: "UTC",
-  }).format(new Date(value))} UTC`;
 }

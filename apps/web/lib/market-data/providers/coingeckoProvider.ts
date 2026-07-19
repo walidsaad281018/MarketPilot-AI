@@ -1,10 +1,11 @@
 import { cryptoMarketMap } from "@/data/cryptoMarketMap";
-import { getCryptoPrices } from "@/services/coingecko";
+import { calculateQuoteFreshness } from "@/lib/market-data/quoteFreshness";
 import type {
   MarketDataProvider,
   MarketDataResult,
   MarketQuoteRequest,
 } from "@/lib/market-data/types";
+import { getCoinGeckoQuote } from "@/services/coingeckoQuote";
 
 export class CoinGeckoProvider
   implements MarketDataProvider
@@ -26,9 +27,8 @@ export class CoinGeckoProvider
   async getQuote(
     request: MarketQuoteRequest,
   ): Promise<MarketDataResult> {
-    const normalizedSymbol = normalizeSymbol(
-      request.symbol,
-    );
+    const normalizedSymbol =
+      normalizeSymbol(request.symbol);
 
     const mapping =
       findCryptoMapping(normalizedSymbol);
@@ -47,36 +47,11 @@ export class CoinGeckoProvider
     }
 
     try {
-      const prices = await getCryptoPrices([
-        mapping.id,
-      ]);
-
       const providerQuote =
-        prices[mapping.id];
+        await getCoinGeckoQuote(mapping.id);
 
-      if (
-        !providerQuote ||
-        typeof providerQuote.usd !== "number" ||
-        !Number.isFinite(providerQuote.usd)
-      ) {
-        return {
-          success: false,
-          error: {
-            code: "INVALID_PROVIDER_RESPONSE",
-            message:
-              "CoinGecko returned an invalid market-price response.",
-          },
-        };
-      }
-
-      const change24h =
-        typeof providerQuote.usd_24h_change ===
-          "number" &&
-        Number.isFinite(
-          providerQuote.usd_24h_change,
-        )
-          ? providerQuote.usd_24h_change
-          : null;
+      const fetchedAt =
+        new Date().toISOString();
 
       return {
         success: true,
@@ -85,9 +60,17 @@ export class CoinGeckoProvider
           category: "Crypto",
           provider: this.name,
           currency: "USD",
-          price: providerQuote.usd,
-          change24h,
-          fetchedAt: new Date().toISOString(),
+          price: providerQuote.price,
+          change24h:
+            providerQuote.change24h,
+          providerUpdatedAt:
+            providerQuote.providerUpdatedAt,
+          fetchedAt,
+          freshness:
+            calculateQuoteFreshness(
+              providerQuote.providerUpdatedAt,
+              new Date(fetchedAt),
+            ),
         },
       };
     } catch (error) {
@@ -108,7 +91,9 @@ export class CoinGeckoProvider
   }
 }
 
-function findCryptoMapping(symbol: string) {
+function findCryptoMapping(
+  symbol: string,
+) {
   const normalizedSymbol =
     normalizeSymbol(symbol);
 

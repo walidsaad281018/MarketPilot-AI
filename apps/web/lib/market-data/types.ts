@@ -8,6 +8,17 @@ export type MarketQuoteRequest = {
   category: MarketAssetCategory;
 };
 
+export type QuoteFreshnessStatus =
+  | "Fresh"
+  | "Delayed"
+  | "Stale"
+  | "Unknown";
+
+export type QuoteFreshness = {
+  status: QuoteFreshnessStatus;
+  ageSeconds: number | null;
+};
+
 export type MarketQuote = {
   symbol: string;
   category: MarketAssetCategory;
@@ -15,7 +26,9 @@ export type MarketQuote = {
   currency: "USD";
   price: number;
   change24h: number | null;
+  providerUpdatedAt: string | null;
   fetchedAt: string;
+  freshness: QuoteFreshness;
 };
 
 export type MarketDataErrorCode =
