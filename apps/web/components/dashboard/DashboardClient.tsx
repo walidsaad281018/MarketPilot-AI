@@ -30,22 +30,32 @@ export default function DashboardClient({
   bitcoinChange24h,
   marketDataAvailable,
 }: DashboardClientProps) {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [
+    searchQuery,
+    setSearchQuery,
+  ] = useState("");
 
   return (
     <>
       <DashboardHero
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={
+          setSearchQuery
+        }
       />
 
-      {!marketDataAvailable && (
+      {!marketDataAvailable ? (
         <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-          Live cryptocurrency prices are temporarily unavailable.
+          Live cryptocurrency prices
+          are temporarily unavailable.
         </div>
-      )}
+      ) : null}
 
-      <MarketOverview liveCryptoData={liveCryptoData} />
+      <MarketOverview
+        liveCryptoData={
+          liveCryptoData
+        }
+      />
 
       <CryptoPriceChart />
 
@@ -72,8 +82,13 @@ export default function DashboardClient({
       <PerformanceBreakdown />
 
       <OpportunityGrid
-        liveCryptoData={liveCryptoData}
+        liveCryptoData={
+          liveCryptoData
+        }
         searchQuery={searchQuery}
+        onSearchChange={
+          setSearchQuery
+        }
       />
     </>
   );

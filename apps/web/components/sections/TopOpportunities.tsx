@@ -1,45 +1,33 @@
 import OpportunityCard from "@/components/cards/OpportunityCard";
+import type {
+  LiveCryptoOpportunity,
+} from "@/data/getLiveCryptoOpportunities";
+import {
+  etfOpportunities,
+  stockOpportunities,
+  type Opportunity,
+} from "@/data/opportunities";
+import {
+  getFeaturedCryptoOpportunity,
+} from "@/lib/services/cryptoOpportunityService";
 
-const featuredOpportunities = [
-  {
-    rank: 1,
-    asset: "Bitcoin",
-    symbol: "BTC",
-    category: "Crypto",
-    score: 97,
-    expectedReturn: "+18%",
-    risk: "Medium" as const,
-    confidence: 95,
-    trend: "Bullish" as const,
-    historicalAccuracy: 84,
-  },
-  {
-    rank: 2,
-    asset: "NVIDIA",
-    symbol: "NVDA",
-    category: "Stock",
-    score: 93,
-    expectedReturn: "+12%",
-    risk: "Medium" as const,
-    confidence: 89,
-    trend: "Bullish" as const,
-    historicalAccuracy: 79,
-  },
-  {
-    rank: 3,
-    asset: "Vanguard S&P 500 ETF",
-    symbol: "VOO",
-    category: "ETF",
-    score: 90,
-    expectedReturn: "+7%",
-    risk: "Low" as const,
-    confidence: 91,
-    trend: "Bullish" as const,
-    historicalAccuracy: 87,
-  },
-];
+type FeaturedOpportunity =
+  Opportunity & {
+    currentPrice?: string;
+    change24h?: string;
+  };
 
-export default function TopOpportunities() {
+export default async function TopOpportunities() {
+  const featuredCryptoOpportunity =
+    await getFeaturedCryptoOpportunity();
+
+  const featuredOpportunities =
+    selectFeaturedOpportunities(
+      featuredCryptoOpportunity,
+      stockOpportunities,
+      etfOpportunities,
+    );
+
   return (
     <section className="py-16">
       <div className="mx-auto max-w-7xl px-5">
@@ -53,8 +41,9 @@ export default function TopOpportunities() {
           </h2>
 
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
-            Demonstration opportunities selected
-            across cryptocurrency, stocks and ETFs.
+            Top-ranked opportunities selected across
+            cryptocurrency, stocks and ETFs using
+            MarketPilot&apos;s scoring engine.
           </p>
         </div>
 
@@ -62,7 +51,7 @@ export default function TopOpportunities() {
           {featuredOpportunities.map(
             (opportunity) => (
               <OpportunityCard
-                key={opportunity.symbol}
+                key={`${opportunity.category}-${opportunity.symbol}`}
                 {...opportunity}
               />
             ),
@@ -71,4 +60,117 @@ export default function TopOpportunities() {
       </div>
     </section>
   );
+}
+
+function selectFeaturedOpportunities(
+  cryptoOpportunity:
+    | LiveCryptoOpportunity
+    | null,
+  stocks: Opportunity[],
+  etfs: Opportunity[],
+): FeaturedOpportunity[] {
+  const topStock =
+    getHighestScoringOpportunity(stocks);
+
+  const topEtf =
+    getHighestScoringOpportunity(etfs);
+
+  const featuredOpportunities: FeaturedOpportunity[] =
+    [];
+
+  if (cryptoOpportunity) {
+    featuredOpportunities.push({
+      ...cryptoOpportunity,
+      currentPrice:
+        formatCurrentPrice(
+          cryptoOpportunity.currentPriceUsd,
+        ),
+      change24h:
+        formatPriceChange(
+          cryptoOpportunity.currentPriceUsd,
+          cryptoOpportunity.priceChange24h,
+        ),
+    });
+  }
+
+  if (topStock) {
+    featuredOpportunities.push(
+      topStock,
+    );
+  }
+
+  if (topEtf) {
+    featuredOpportunities.push(
+      topEtf,
+    );
+  }
+
+  return featuredOpportunities
+    .sort(
+      (first, second) =>
+        second.score - first.score,
+    )
+    .map((opportunity, index) => ({
+      ...opportunity,
+      rank: index + 1,
+    }));
+}
+
+function getHighestScoringOpportunity<
+  T extends Opportunity,
+>(
+  opportunities: T[],
+): T | null {
+  if (opportunities.length === 0) {
+    return null;
+  }
+
+  return opportunities.reduce(
+    (highest, opportunity) =>
+      opportunity.score > highest.score
+        ? opportunity
+        : highest,
+  );
+}
+
+function formatCurrentPrice(
+  price: number | null,
+): string | undefined {
+  if (price === null) {
+    return undefined;
+  }
+
+  return new Intl.NumberFormat(
+    "en-US",
+    {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits:
+        price >= 1 ? 2 : 4,
+      maximumFractionDigits:
+        price >= 1 ? 2 : 8,
+    },
+  ).format(price);
+}
+
+function formatPriceChange(
+  price: number | null,
+  priceChange24h:
+    | number
+    | null
+    | undefined,
+): string | undefined {
+  if (
+    price === null ||
+    priceChange24h == null
+  ) {
+    return undefined;
+  }
+
+  const sign =
+    priceChange24h > 0 ? "+" : "";
+
+  return `${sign}${priceChange24h.toFixed(
+    2,
+  )}%`;
 }

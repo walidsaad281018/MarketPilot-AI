@@ -1,7 +1,14 @@
 import Link from "next/link";
 
-type RiskLevel = "Low" | "Medium" | "High";
-type Trend = "Bullish" | "Neutral" | "Bearish";
+type RiskLevel =
+  | "Low"
+  | "Medium"
+  | "High";
+
+type Trend =
+  | "Bullish"
+  | "Neutral"
+  | "Bearish";
 
 type OpportunityCardProps = {
   rank: number;
@@ -18,19 +25,29 @@ type OpportunityCardProps = {
   change24h?: string;
 };
 
-const riskStyles: Record<RiskLevel, string> = {
+const riskStyles: Record<
+  RiskLevel,
+  string
+> = {
   Low: "bg-emerald-100 text-emerald-700",
   Medium: "bg-amber-100 text-amber-700",
   High: "bg-red-100 text-red-700",
 };
 
-const trendStyles: Record<Trend, string> = {
+const trendStyles: Record<
+  Trend,
+  string
+> = {
   Bullish: "text-emerald-600",
   Neutral: "text-amber-600",
   Bearish: "text-red-600",
 };
 
-const rankMedals = ["🥇", "🥈", "🥉"];
+const rankMedals = [
+  "🥇",
+  "🥈",
+  "🥉",
+];
 
 export default function OpportunityCard({
   rank,
@@ -52,7 +69,13 @@ export default function OpportunityCard({
       : `#${rank}`;
 
   const isNegativeChange =
-    change24h?.startsWith("-") ?? false;
+    change24h?.startsWith("-") ??
+    false;
+
+  const opportunityHref =
+    `/opportunities/${encodeURIComponent(
+      symbol.toUpperCase(),
+    )}`;
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -82,13 +105,13 @@ export default function OpportunityCard({
         </div>
       </div>
 
-      {currentPrice && (
+      {currentPrice ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-lg font-bold text-slate-900">
             {currentPrice}
           </span>
 
-          {change24h && (
+          {change24h ? (
             <span
               className={
                 isNegativeChange
@@ -98,15 +121,17 @@ export default function OpportunityCard({
             >
               24h {change24h}
             </span>
-          )}
+          ) : null}
         </div>
-      )}
+      ) : null}
 
       <div className="mt-5">
         <div className="h-2 overflow-hidden rounded-full bg-slate-200">
           <div
             className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
-            style={{ width: `${score}%` }}
+            style={{
+              width: `${score}%`,
+            }}
           />
         </div>
       </div>
@@ -142,9 +167,7 @@ export default function OpportunityCard({
           <dd
             className={`mt-2 text-sm font-bold ${trendStyles[trend]}`}
           >
-            {trend === "Bullish" && "↗ "}
-            {trend === "Neutral" && "→ "}
-            {trend === "Bearish" && "↘ "}
+            {getTrendArrow(trend)}{" "}
             {trend}
           </dd>
         </div>
@@ -172,13 +195,27 @@ export default function OpportunityCard({
       </div>
 
       <Link
-        href={`/analysis/${symbol}`}
+        href={opportunityHref}
         className="mt-5 block w-full rounded-xl bg-slate-900 px-4 py-3 text-center font-bold text-white transition hover:bg-blue-600"
       >
         Analyze Opportunity →
       </Link>
     </article>
   );
+}
+
+function getTrendArrow(
+  trend: Trend,
+): string {
+  if (trend === "Bullish") {
+    return "↗";
+  }
+
+  if (trend === "Bearish") {
+    return "↘";
+  }
+
+  return "→";
 }
 
 type MetricProps = {

@@ -8,9 +8,7 @@ import Footer from "../components/layout/Footer";
 export default function HomePage() {
   return (
     <main className="min-h-screen bg-slate-100">
-
       <div className="mx-auto max-w-6xl px-6">
-
         <Navbar />
 
         <Header />
@@ -20,13 +18,14 @@ export default function HomePage() {
         <TopOpportunities />
 
         <div className="mt-10 text-center">
-          <Button text="View Top 20 Opportunities" />
+          <Button
+            text="View Top 20 Opportunities"
+            href="/opportunities"
+          />
         </div>
 
         <Footer />
-
       </div>
-
     </main>
   );
 }

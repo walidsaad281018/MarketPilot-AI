@@ -1,0 +1,101 @@
+﻿import {
+  LiveCryptoRecommendationPublicationService,
+} from "@/lib/recommendations/liveCryptoRecommendationPublicationService";
+import {
+  RecommendationPublisher,
+} from "@/lib/recommendations/recommendationPublisher";
+import {
+  createSqliteRecommendationRepository,
+} from "@/lib/recommendations/recommendationRepositoryFactory";
+import {
+  RecommendationSeedService,
+  type SeedRecommendationsResult,
+} from "@/lib/recommendations/recommendationSeedService";
+import type {
+  SqliteRecommendationRepository,
+} from "@/lib/recommendations/sqliteRecommendationRepository";
+import {
+  RecommendationService,
+} from "@/lib/services/api/recommendationServiceCore";
+import {
+  RecommendationHistoryService,
+} from "@/lib/services/recommendationHistoryService";
+
+export type CreateApplicationCompositionOptions = {
+  databasePath?: string;
+  seedDatabase?: boolean;
+};
+
+export type ApplicationComposition = {
+  repository:
+    SqliteRecommendationRepository;
+  recommendationHistoryService:
+    RecommendationHistoryService;
+  recommendationService:
+    RecommendationService;
+  recommendationPublisher:
+    RecommendationPublisher;
+  liveCryptoRecommendationPublicationService:
+    LiveCryptoRecommendationPublicationService;
+  seedResult:
+    SeedRecommendationsResult | null;
+  close: () => void;
+};
+
+export function createApplicationComposition({
+  databasePath,
+  seedDatabase = true,
+}: CreateApplicationCompositionOptions = {}):
+  ApplicationComposition {
+  const repository =
+    createSqliteRecommendationRepository({
+      databasePath,
+    });
+
+  try {
+    const seedResult =
+      seedDatabase
+        ? new RecommendationSeedService({
+            repository,
+          }).seedIfEmpty()
+        : null;
+
+    const recommendationHistoryService =
+      new RecommendationHistoryService(
+        repository,
+      );
+
+    const recommendationService =
+      new RecommendationService({
+        historyService:
+          recommendationHistoryService,
+      });
+
+    const recommendationPublisher =
+      new RecommendationPublisher({
+        repository,
+      });
+
+    const liveCryptoRecommendationPublicationService =
+      new LiveCryptoRecommendationPublicationService({
+        publisher:
+          recommendationPublisher,
+      });
+
+    return {
+      repository,
+      recommendationHistoryService,
+      recommendationService,
+      recommendationPublisher,
+      liveCryptoRecommendationPublicationService,
+      seedResult,
+      close: () => {
+        repository.close();
+      },
+    };
+  } catch (error) {
+    repository.close();
+
+    throw error;
+  }
+}

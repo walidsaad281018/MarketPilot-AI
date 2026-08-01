@@ -1,0 +1,4 @@
+﻿# SQLite runtime database files
+database/*.db
+database/*.db-shm
+database/*.db-wal

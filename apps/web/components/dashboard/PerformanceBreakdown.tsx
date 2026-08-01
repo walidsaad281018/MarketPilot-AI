@@ -1,13 +1,16 @@
-import Link from "next/link";
-import { recommendationRecords } from "@/data/recommendations";
-
-const categories = [
-  "Crypto",
-  "Stock",
-  "ETF",
-] as const;
+﻿import Link from "next/link";
+import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
+import { calculateAllCategoryPerformance } from "@/lib/services/recommendationPerformanceService";
 
 export default function PerformanceBreakdown() {
+  const recommendationRecords =
+    recommendationHistoryService.getAllRecommendations();
+
+  const categoryPerformance =
+    calculateAllCategoryPerformance(
+      recommendationRecords,
+    );
+
   return (
     <section className="mb-12 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
@@ -30,37 +33,18 @@ export default function PerformanceBreakdown() {
           href="/performance"
           className="inline-flex rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-blue-600"
         >
-          Open Full Performance Center →
+          Open Full Performance Center â†’
         </Link>
       </div>
 
       <div className="space-y-6">
-        {categories.map((category) => {
-          const categoryRecords =
-            recommendationRecords.filter(
-              (record) =>
-                record.category === category,
-            );
-
-          const verified =
-            categoryRecords.filter(
-              (record) =>
-                record.status !== "Pending",
-            );
-
-          const successful = verified.filter(
-            (record) =>
-              record.status === "Successful",
-          );
-
-          const successRate =
-            verified.length === 0
-              ? 0
-              : (successful.length /
-                  verified.length) *
-                100;
-
-          return (
+        {categoryPerformance.map(
+          ({
+            category,
+            successful,
+            verified,
+            successRate,
+          }) => (
             <div key={category}>
               <div className="mb-2 flex items-center justify-between gap-4">
                 <div>
@@ -69,8 +53,8 @@ export default function PerformanceBreakdown() {
                   </span>
 
                   <p className="mt-1 text-xs text-slate-500">
-                    {successful.length} successful
-                    from {verified.length} verified
+                    {successful} successful from{" "}
+                    {verified} verified
                   </p>
                 </div>
 
@@ -88,8 +72,8 @@ export default function PerformanceBreakdown() {
                 />
               </div>
             </div>
-          );
-        })}
+          ),
+        )}
       </div>
 
       <div className="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-5">

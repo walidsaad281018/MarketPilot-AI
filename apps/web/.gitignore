@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# SQLite runtime database
+../../database/*.db
+../../database/*.db-shm
+../../database/*.db-wal
+
+# Temporary inspection artifacts
+*-inspection.txt
+*-export.txt
+QueryEngine_Current.txt

@@ -1,72 +1,29 @@
-import {
-  recommendationRecords,
-  type RecommendationRecord,
+﻿import {
+  type RecommendationStatus,
 } from "@/data/recommendations";
+import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
+import { calculateRecommendationPerformance } from "@/lib/services/recommendationPerformanceService";
 
-function calculateMetrics(
-  records: RecommendationRecord[],
-) {
-  const successful = records.filter(
-    (record) => record.status === "Successful",
-  );
-
-  const unsuccessful = records.filter(
-    (record) =>
-      record.status === "Unsuccessful",
-  );
-
-  const pending = records.filter(
-    (record) => record.status === "Pending",
-  );
-
-  const verified = [
-    ...successful,
-    ...unsuccessful,
-  ];
-
-  const successRate =
-    verified.length > 0
-      ? (successful.length / verified.length) *
-        100
-      : 0;
-
-  const verifiedReturns = verified
-    .map((record) => record.actualReturn)
-    .filter(
-      (value): value is number =>
-        typeof value === "number",
-    );
-
-  const averageReturn =
-    verifiedReturns.length > 0
-      ? verifiedReturns.reduce(
-          (total, value) => total + value,
-          0,
-        ) / verifiedReturns.length
-      : 0;
-
-  return {
-    total: records.length,
-    successful: successful.length,
-    unsuccessful: unsuccessful.length,
-    pending: pending.length,
-    verified: verified.length,
-    successRate,
-    averageReturn,
-  };
-}
-
-const statusStyles = {
+const statusStyles: Record<
+  RecommendationStatus,
+  string
+> = {
   Successful:
     "bg-emerald-100 text-emerald-700",
-  Unsuccessful: "bg-red-100 text-red-700",
-  Pending: "bg-amber-100 text-amber-700",
+  Unsuccessful:
+    "bg-red-100 text-red-700",
+  Pending:
+    "bg-amber-100 text-amber-700",
 };
 
 export default function PerformanceCenter() {
-  const metrics = calculateMetrics(
-    recommendationRecords,
-  );
+  const recommendationRecords =
+    recommendationHistoryService.getAllRecommendations();
+
+  const metrics =
+    calculateRecommendationPerformance(
+      recommendationRecords,
+    );
 
   return (
     <section className="mb-12">
@@ -171,7 +128,7 @@ export default function PerformanceCenter() {
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        {record.symbol} ·{" "}
+                        {record.symbol} Â·{" "}
                         {record.category}
                       </p>
                     </TableCell>
@@ -291,3 +248,4 @@ function formatDate(value: string): string {
     year: "numeric",
   }).format(new Date(`${value}T00:00:00`));
 }
+
