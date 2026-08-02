@@ -1,4 +1,12 @@
-import Link from "next/link";
+﻿import Link from "next/link";
+
+import type {
+  MarketDataSource,
+} from "@/lib/market/marketDataMetadata";
+import type {
+  MarketQualityAssessment,
+  MarketQualityLevel,
+} from "@/lib/marketQuality/marketQualityEngine";
 
 type RiskLevel =
   | "Low"
@@ -23,15 +31,23 @@ type OpportunityCardProps = {
   historicalAccuracy: number;
   currentPrice?: string;
   change24h?: string;
+  dataSource?: MarketDataSource;
+  source?: string;
+  lastUpdated?: string | null;
+  isStale?: boolean;
+  marketQuality?: MarketQualityAssessment;
 };
 
 const riskStyles: Record<
   RiskLevel,
   string
 > = {
-  Low: "bg-emerald-100 text-emerald-700",
-  Medium: "bg-amber-100 text-amber-700",
-  High: "bg-red-100 text-red-700",
+  Low:
+    "bg-emerald-100 text-emerald-700",
+  Medium:
+    "bg-amber-100 text-amber-700",
+  High:
+    "bg-red-100 text-red-700",
 };
 
 const trendStyles: Record<
@@ -41,6 +57,20 @@ const trendStyles: Record<
   Bullish: "text-emerald-600",
   Neutral: "text-amber-600",
   Bearish: "text-red-600",
+};
+
+const qualityStyles: Record<
+  MarketQualityLevel,
+  string
+> = {
+  Excellent:
+    "bg-emerald-100 text-emerald-700",
+  Good:
+    "bg-blue-100 text-blue-700",
+  Fair:
+    "bg-amber-100 text-amber-700",
+  Poor:
+    "bg-red-100 text-red-700",
 };
 
 const rankMedals = [
@@ -62,6 +92,11 @@ export default function OpportunityCard({
   historicalAccuracy,
   currentPrice,
   change24h,
+  dataSource,
+  source,
+  lastUpdated,
+  isStale,
+  marketQuality,
 }: OpportunityCardProps) {
   const rankLabel =
     rank <= 3
@@ -76,6 +111,17 @@ export default function OpportunityCard({
     `/opportunities/${encodeURIComponent(
       symbol.toUpperCase(),
     )}`;
+
+  const dataStatus =
+    getDataStatus({
+      dataSource,
+      isStale,
+    });
+
+  const formattedLastUpdated =
+    formatLastUpdated(
+      lastUpdated,
+    );
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -104,6 +150,64 @@ export default function OpportunityCard({
           </p>
         </div>
       </div>
+
+      {marketQuality ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">
+                Market quality
+              </p>
+
+              <p className="mt-1 text-lg font-black text-slate-900">
+                {marketQuality.score}
+                <span className="ml-1 text-sm font-medium text-slate-500">
+                  / 100
+                </span>
+              </p>
+            </div>
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${qualityStyles[marketQuality.level]}`}
+            >
+              {marketQuality.level}
+            </span>
+          </div>
+
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
+              style={{
+                width:
+                  `${marketQuality.score}%`,
+              }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {dataStatus ? (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span
+            className={`rounded-full px-3 py-1 font-bold ${dataStatus.styles}`}
+          >
+            {dataStatus.label}
+          </span>
+
+          {source ? (
+            <span className="font-medium text-slate-500">
+              Source: {source}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {formattedLastUpdated ? (
+        <p className="mt-2 text-xs text-slate-500">
+          Updated{" "}
+          {formattedLastUpdated}
+        </p>
+      ) : null}
 
       {currentPrice ? (
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -188,7 +292,8 @@ export default function OpportunityCard({
           <div
             className="h-full rounded-full bg-emerald-500"
             style={{
-              width: `${historicalAccuracy}%`,
+              width:
+                `${historicalAccuracy}%`,
             }}
           />
         </div>
@@ -201,6 +306,81 @@ export default function OpportunityCard({
         Analyze Opportunity →
       </Link>
     </article>
+  );
+}
+
+type DataStatusOptions = {
+  dataSource?:
+    MarketDataSource;
+  isStale?: boolean;
+};
+
+type DataStatus = {
+  label: string;
+  styles: string;
+};
+
+function getDataStatus({
+  dataSource,
+  isStale,
+}: DataStatusOptions):
+  DataStatus | null {
+  if (!dataSource) {
+    return null;
+  }
+
+  if (
+    dataSource === "fallback"
+  ) {
+    return {
+      label: "Demo data",
+      styles:
+        "bg-amber-100 text-amber-700",
+    };
+  }
+
+  if (isStale) {
+    return {
+      label: "Cached data",
+      styles:
+        "bg-orange-100 text-orange-700",
+    };
+  }
+
+  return {
+    label: "Live data",
+    styles:
+      "bg-emerald-100 text-emerald-700",
+  };
+}
+
+function formatLastUpdated(
+  lastUpdated:
+    | string
+    | null
+    | undefined,
+): string | null {
+  if (!lastUpdated) {
+    return null;
+  }
+
+  const timestamp =
+    Date.parse(lastUpdated);
+
+  if (
+    !Number.isFinite(timestamp)
+  ) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(
+    "en-US",
+    {
+      dateStyle: "medium",
+      timeStyle: "short",
+    },
+  ).format(
+    new Date(timestamp),
   );
 }
 
