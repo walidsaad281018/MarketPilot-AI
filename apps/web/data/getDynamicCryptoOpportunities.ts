@@ -3,6 +3,9 @@
   type LiveCryptoOpportunity,
 } from "@/data/getLiveCryptoOpportunities";
 import {
+  createLiveMarketDataMetadata,
+} from "@/lib/market/marketDataMetadata";
+import {
   buildCryptoOpportunity,
 } from "@/lib/opportunities/cryptoOpportunityBuilder";
 import {
@@ -13,6 +16,7 @@ import {
 export type DynamicCryptoOpportunityOptions = {
   discoveryLimit?: number;
   resultLimit?: number;
+  currentTime?: Date;
 };
 
 const DEFAULT_DISCOVERY_LIMIT = 200;
@@ -103,6 +107,10 @@ export async function getDynamicCryptoOpportunities(
     options.resultLimit ??
     DEFAULT_RESULT_LIMIT;
 
+  const currentTime =
+    options.currentTime ??
+    new Date();
+
   validateLimits(
     discoveryLimit,
     resultLimit,
@@ -127,7 +135,13 @@ export async function getDynamicCryptoOpportunities(
     const opportunities =
       uniqueMarkets
         .map(
-          buildDynamicOpportunity,
+          (
+            market,
+          ): LiveCryptoOpportunity =>
+            buildDynamicOpportunity(
+              market,
+              currentTime,
+            ),
         )
         .sort(compareOpportunities)
         .slice(0, resultLimit)
@@ -141,9 +155,12 @@ export async function getDynamicCryptoOpportunities(
           }),
         );
 
-    if (opportunities.length === 0) {
+    if (
+      opportunities.length === 0
+    ) {
       return createFallbackOpportunities(
         resultLimit,
+        currentTime,
       );
     }
 
@@ -156,6 +173,7 @@ export async function getDynamicCryptoOpportunities(
 
     return createFallbackOpportunities(
       resultLimit,
+      currentTime,
     );
   }
 }
@@ -239,11 +257,21 @@ function isEligibleMarket(
 
 function buildDynamicOpportunity(
   market: DiscoveredCryptoMarket,
+  currentTime: Date,
 ): LiveCryptoOpportunity {
+  const metadata =
+    createLiveMarketDataMetadata({
+      source: market.source,
+      lastUpdated:
+        market.lastUpdated,
+      currentTime,
+    });
+
   return buildCryptoOpportunity({
     asset: market.name,
     symbol: market.symbol,
     market,
+    metadata,
   });
 }
 
@@ -289,8 +317,13 @@ function compareOpportunities(
   first: LiveCryptoOpportunity,
   second: LiveCryptoOpportunity,
 ): number {
-  if (second.score !== first.score) {
-    return second.score - first.score;
+  if (
+    second.score !== first.score
+  ) {
+    return (
+      second.score -
+      first.score
+    );
   }
 
   if (
@@ -311,9 +344,12 @@ function compareOpportunities(
 
 async function createFallbackOpportunities(
   resultLimit: number,
+  currentTime: Date,
 ): Promise<LiveCryptoOpportunity[]> {
   const fallbackOpportunities =
-    await getLiveCryptoOpportunities();
+    await getLiveCryptoOpportunities({
+      currentTime,
+    });
 
   return fallbackOpportunities
     .slice(0, resultLimit)
