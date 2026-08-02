@@ -1,8 +1,14 @@
 ﻿import type {
-  Opportunity,
   RiskLevel,
   Trend,
 } from "@/data/opportunities";
+import {
+  createFallbackMarketDataMetadata,
+  type MarketDataMetadata,
+} from "@/lib/market/marketDataMetadata";
+import type {
+  OpportunityWithMarketMetadata,
+} from "@/lib/opportunities/opportunityWithMarketMetadata";
 import type {
   MarketQuote,
 } from "@/lib/providers/marketProvider";
@@ -23,10 +29,11 @@ export type BuildCryptoOpportunityInput = {
   asset: string;
   symbol: string;
   market: CryptoOpportunityMarketInput;
+  metadata?: MarketDataMetadata;
 };
 
 export type BuiltCryptoOpportunity =
-  Opportunity & {
+  OpportunityWithMarketMetadata & {
     currentPriceUsd: number;
   };
 
@@ -34,6 +41,8 @@ export function buildCryptoOpportunity({
   asset,
   symbol,
   market,
+  metadata =
+    createFallbackMarketDataMetadata(),
 }: BuildCryptoOpportunityInput):
   BuiltCryptoOpportunity {
   validateAssetName(asset);
@@ -103,6 +112,7 @@ export function buildCryptoOpportunity({
       ),
     volume24hUsd:
       market.volume24hUsd,
+    ...metadata,
   };
 }
 

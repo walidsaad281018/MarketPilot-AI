@@ -5,6 +5,9 @@
 } from "vitest";
 
 import {
+  createLiveMarketDataMetadata,
+} from "@/lib/market/marketDataMetadata";
+import {
   buildCryptoOpportunity,
 } from "@/lib/opportunities/cryptoOpportunityBuilder";
 
@@ -12,7 +15,7 @@ describe(
   "buildCryptoOpportunity",
   () => {
     it(
-      "builds the same normalized opportunity shape used by the live pipelines",
+      "builds the normalized crypto opportunity shape",
       () => {
         const opportunity =
           buildCryptoOpportunity({
@@ -45,6 +48,89 @@ describe(
           volatility24h: 4,
           volume24hUsd:
             1_000_000_000,
+          dataSource: "fallback",
+          source:
+            "MarketPilot Demo",
+          lastUpdated: null,
+          isStale: false,
+        });
+      },
+    );
+
+    it(
+      "attaches supplied live market metadata",
+      () => {
+        const metadata =
+          createLiveMarketDataMetadata({
+            source: "CoinGecko",
+            lastUpdated:
+              "2026-08-02T12:00:00.000Z",
+            currentTime:
+              new Date(
+                "2026-08-02T12:03:00.000Z",
+              ),
+          });
+
+        const opportunity =
+          buildCryptoOpportunity({
+            asset: "Ethereum",
+            symbol: "ETH",
+            market: {
+              price: 3_000,
+              priceChange24h: 5,
+              volume24hUsd:
+                2_000_000_000,
+              volatility24h: 4,
+            },
+            metadata,
+          });
+
+        expect(
+          opportunity,
+        ).toMatchObject({
+          symbol: "ETH",
+          dataSource: "live",
+          source: "CoinGecko",
+          lastUpdated:
+            "2026-08-02T12:00:00.000Z",
+          isStale: false,
+        });
+      },
+    );
+
+    it(
+      "preserves stale live metadata",
+      () => {
+        const metadata =
+          createLiveMarketDataMetadata({
+            lastUpdated:
+              "2026-08-02T12:00:00.000Z",
+            currentTime:
+              new Date(
+                "2026-08-02T12:10:00.000Z",
+              ),
+          });
+
+        const opportunity =
+          buildCryptoOpportunity({
+            asset: "Solana",
+            symbol: "SOL",
+            market: {
+              price: 150,
+              priceChange24h: 2,
+              volume24hUsd:
+                1_000_000_000,
+              volatility24h: 4,
+            },
+            metadata,
+          });
+
+        expect(
+          opportunity,
+        ).toMatchObject({
+          dataSource: "live",
+          source: "CoinGecko",
+          isStale: true,
         });
       },
     );
