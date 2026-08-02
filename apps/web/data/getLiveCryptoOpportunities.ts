@@ -1,11 +1,17 @@
 ﻿import {
   cryptoOpportunities,
-  type Opportunity,
 } from "@/data/opportunities";
+import {
+  createFallbackMarketDataMetadata,
+  createLiveMarketDataMetadata,
+} from "@/lib/market/marketDataMetadata";
 import {
   buildCryptoOpportunity,
   type BuiltCryptoOpportunity,
 } from "@/lib/opportunities/cryptoOpportunityBuilder";
+import type {
+  OpportunityWithMarketMetadata,
+} from "@/lib/opportunities/opportunityWithMarketMetadata";
 import {
   cryptoProvider,
   type MarketQuote,
@@ -17,9 +23,13 @@ type CryptoAsset = {
 };
 
 export type LiveCryptoOpportunity =
-  Opportunity & {
+  OpportunityWithMarketMetadata & {
     currentPriceUsd: number | null;
   };
+
+export type GetLiveCryptoOpportunitiesOptions = {
+  currentTime?: Date;
+};
 
 const cryptoAssets: CryptoAsset[] = [
   {
@@ -104,7 +114,9 @@ const cryptoAssets: CryptoAsset[] = [
   },
 ];
 
-export async function getLiveCryptoOpportunities(): Promise<
+export async function getLiveCryptoOpportunities({
+  currentTime = new Date(),
+}: GetLiveCryptoOpportunitiesOptions = {}): Promise<
   LiveCryptoOpportunity[]
 > {
   try {
@@ -140,10 +152,19 @@ export async function getLiveCryptoOpportunities(): Promise<
               return null;
             }
 
+            const metadata =
+              createLiveMarketDataMetadata({
+                source: quote.source,
+                lastUpdated:
+                  quote.lastUpdated,
+                currentTime,
+              });
+
             return buildCryptoOpportunity({
               asset: asset.asset,
               symbol: asset.symbol,
               market: quote,
+              metadata,
             });
           },
         )
@@ -204,12 +225,16 @@ function createQuoteLookup(
 
 function createFallbackOpportunities():
   LiveCryptoOpportunity[] {
+  const fallbackMetadata =
+    createFallbackMarketDataMetadata();
+
   return cryptoOpportunities.map(
     (
       opportunity,
     ): LiveCryptoOpportunity => ({
       ...opportunity,
       currentPriceUsd: null,
+      ...fallbackMetadata,
     }),
   );
 }

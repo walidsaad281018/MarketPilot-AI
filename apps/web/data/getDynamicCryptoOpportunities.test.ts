@@ -1,10 +1,11 @@
-import {
+﻿import {
   afterEach,
   describe,
   expect,
   it,
   vi,
 } from "vitest";
+
 import {
   getDynamicCryptoOpportunities,
 } from "@/data/getDynamicCryptoOpportunities";
@@ -33,6 +34,7 @@ vi.mock(
 
 afterEach(() => {
   vi.restoreAllMocks();
+
   getLiveCryptoOpportunitiesMock
     .mockReset();
 });
@@ -64,7 +66,8 @@ describe(
           }),
           createMarket({
             id: "duplicate-alpha",
-            name: "Duplicate Alpha",
+            name:
+              "Duplicate Alpha",
             symbol: "aaa",
             priceChange24h: 20,
             volume24hUsd:
@@ -103,7 +106,9 @@ describe(
           cryptoProvider.getTopMarkets,
         ).toHaveBeenCalledWith(4);
 
-        expect(result).toHaveLength(3);
+        expect(result).toHaveLength(
+          3,
+        );
 
         expect(
           result.map(
@@ -149,12 +154,17 @@ describe(
       async () => {
         const discoveredMarkets =
           Array.from(
-            { length: 120 },
+            {
+              length: 120,
+            },
             (_, index) =>
               createMarket({
-                id: `market-${index}`,
-                name: `Market ${index}`,
-                symbol: `M${index}`,
+                id:
+                  `market-${index}`,
+                name:
+                  `Market ${index}`,
+                symbol:
+                  `M${index}`,
                 priceChange24h:
                   index % 10,
                 volume24hUsd:
@@ -178,14 +188,20 @@ describe(
 
         expect(
           cryptoProvider.getTopMarkets,
-        ).toHaveBeenCalledWith(200);
+        ).toHaveBeenCalledWith(
+          200,
+        );
 
-        expect(result).toHaveLength(100);
-
-        expect(result[0].rank).toBe(1);
+        expect(result).toHaveLength(
+          100,
+        );
 
         expect(
-          result[99].rank,
+          result[0]?.rank,
+        ).toBe(1);
+
+        expect(
+          result[99]?.rank,
         ).toBe(100);
 
         expect(
@@ -290,7 +306,9 @@ describe(
           getLiveCryptoOpportunitiesMock,
         ).toHaveBeenCalledOnce();
 
-        expect(result).toHaveLength(1);
+        expect(result).toHaveLength(
+          1,
+        );
 
         expect(result[0]).toMatchObject({
           rank: 1,
@@ -391,15 +409,23 @@ function createFallbackOpportunity(
     volatility24h: 3.9,
     volume24hUsd:
       1_000_000_000,
+    dataSource: "fallback",
+    source: "MarketPilot Demo",
+    lastUpdated: null,
+    isStale: false,
     ...overrides,
   };
 }
 
 function isSortedByScore(
-  opportunities: LiveCryptoOpportunity[],
+  opportunities:
+    LiveCryptoOpportunity[],
 ): boolean {
   return opportunities.every(
-    (opportunity, index) => {
+    (
+      opportunity,
+      index,
+    ) => {
       const nextOpportunity =
         opportunities[index + 1];
 
