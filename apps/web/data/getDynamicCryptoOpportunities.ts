@@ -1,16 +1,14 @@
-import {
+﻿import {
   getLiveCryptoOpportunities,
   type LiveCryptoOpportunity,
 } from "@/data/getLiveCryptoOpportunities";
-import type {
-  RiskLevel,
-  Trend,
-} from "@/data/opportunities";
+import {
+  buildCryptoOpportunity,
+} from "@/lib/opportunities/cryptoOpportunityBuilder";
 import {
   cryptoProvider,
   type DiscoveredCryptoMarket,
 } from "@/lib/providers/marketProvider";
-import { calculateOpportunityScore } from "@/lib/scoring/scoreEngine";
 
 export type DynamicCryptoOpportunityOptions = {
   discoveryLimit?: number;
@@ -242,57 +240,11 @@ function isEligibleMarket(
 function buildDynamicOpportunity(
   market: DiscoveredCryptoMarket,
 ): LiveCryptoOpportunity {
-  const scoringResult =
-    calculateOpportunityScore({
-      priceChange24h:
-        market.priceChange24h,
-      volatility24h:
-        market.volatility24h,
-      volume24hUsd:
-        market.volume24hUsd,
-    });
-
-  return {
-    rank: 0,
+  return buildCryptoOpportunity({
     asset: market.name,
     symbol: market.symbol,
-    category: "Crypto",
-    score: scoringResult.overall,
-    expectedReturn:
-      calculateExpectedReturn(
-        scoringResult.overall,
-        market.priceChange24h,
-      ),
-    risk: determineRiskLevel(
-      market.volatility24h,
-    ),
-    confidence:
-      calculateConfidence(
-        scoringResult.overall,
-        market,
-      ),
-    trend: determineTrend(
-      market.priceChange24h,
-    ),
-    historicalAccuracy:
-      calculateHistoricalAccuracy(
-        scoringResult.overall,
-      ),
-    currentPriceUsd:
-      roundPrice(
-        market.price,
-      ),
-    priceChange24h:
-      roundToTwoDecimals(
-        market.priceChange24h,
-      ),
-    volatility24h:
-      roundToTwoDecimals(
-        market.volatility24h,
-      ),
-    volume24hUsd:
-      market.volume24hUsd,
-  };
+    market,
+  });
 }
 
 function removeDuplicateSymbols(
@@ -374,137 +326,6 @@ async function createFallbackOpportunities(
         rank: index + 1,
       }),
     );
-}
-
-function calculateConfidence(
-  score: number,
-  market: DiscoveredCryptoMarket,
-): number {
-  const volatilityPenalty =
-    Math.min(
-      15,
-      Math.round(
-        market.volatility24h *
-          0.8,
-      ),
-    );
-
-  const liquidityBonus =
-    market.volume24hUsd >=
-    5_000_000_000
-      ? 5
-      : market.volume24hUsd >=
-          1_000_000_000
-        ? 3
-        : market.volume24hUsd >=
-            100_000_000
-          ? 1
-          : 0;
-
-  return clampScore(
-    Math.round(
-      score -
-        volatilityPenalty +
-        liquidityBonus,
-    ),
-  );
-}
-
-function calculateExpectedReturn(
-  score: number,
-  priceChange24h: number,
-): string {
-  const scoreContribution =
-    score * 0.12;
-
-  const momentumContribution =
-    Math.max(
-      0,
-      priceChange24h * 0.35,
-    );
-
-  const expectedReturn =
-    Math.max(
-      1,
-      scoreContribution +
-        momentumContribution,
-    );
-
-  return `+${roundToTwoDecimals(
-    expectedReturn,
-  )}%`;
-}
-
-function calculateHistoricalAccuracy(
-  score: number,
-): number {
-  return clampScore(
-    Math.round(
-      60 + score * 0.28,
-    ),
-  );
-}
-
-function determineRiskLevel(
-  volatility24h: number,
-): RiskLevel {
-  if (volatility24h >= 8) {
-    return "High";
-  }
-
-  if (volatility24h >= 4) {
-    return "Medium";
-  }
-
-  return "Low";
-}
-
-function determineTrend(
-  priceChange24h: number,
-): Trend {
-  if (priceChange24h >= 1) {
-    return "Bullish";
-  }
-
-  if (priceChange24h <= -1) {
-    return "Bearish";
-  }
-
-  return "Neutral";
-}
-
-function clampScore(
-  value: number,
-): number {
-  return Math.min(
-    100,
-    Math.max(0, value),
-  );
-}
-
-function roundPrice(
-  value: number,
-): number {
-  if (value >= 1) {
-    return roundToTwoDecimals(
-      value,
-    );
-  }
-
-  return (
-    Math.round(
-      value * 100_000_000,
-    ) / 100_000_000
-  );
-}
-
-function roundToTwoDecimals(
-  value: number,
-): number {
-  return (
-    Math.round(value * 100) /
-    100
-  );
 }
 
 function validateLimits(
