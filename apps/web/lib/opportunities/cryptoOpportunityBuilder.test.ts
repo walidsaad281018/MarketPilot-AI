@@ -15,7 +15,7 @@ describe(
   "buildCryptoOpportunity",
   () => {
     it(
-      "builds the normalized crypto opportunity shape",
+      "builds the normalized crypto opportunity shape with market quality",
       () => {
         const opportunity =
           buildCryptoOpportunity({
@@ -27,6 +27,8 @@ describe(
               volume24hUsd:
                 1_000_000_000,
               volatility24h: 4,
+              marketCapUsd:
+                10_000_000_000,
             },
           });
 
@@ -53,12 +55,20 @@ describe(
             "MarketPilot Demo",
           lastUpdated: null,
           isStale: false,
+          marketQuality: {
+            score: 85,
+            level: "Excellent",
+            liquidityScore: 25,
+            marketCapScore: 25,
+            volatilityScore: 20,
+            freshnessScore: 15,
+          },
         });
       },
     );
 
     it(
-      "attaches supplied live market metadata",
+      "attaches supplied live market metadata and quality",
       () => {
         const metadata =
           createLiveMarketDataMetadata({
@@ -81,6 +91,8 @@ describe(
               volume24hUsd:
                 2_000_000_000,
               volatility24h: 4,
+              marketCapUsd:
+                400_000_000_000,
             },
             metadata,
           });
@@ -94,12 +106,20 @@ describe(
           lastUpdated:
             "2026-08-02T12:00:00.000Z",
           isStale: false,
+          marketQuality: {
+            score: 90,
+            level: "Excellent",
+            liquidityScore: 25,
+            marketCapScore: 30,
+            volatilityScore: 20,
+            freshnessScore: 15,
+          },
         });
       },
     );
 
     it(
-      "preserves stale live metadata",
+      "penalizes stale live data in market quality",
       () => {
         const metadata =
           createLiveMarketDataMetadata({
@@ -121,6 +141,8 @@ describe(
               volume24hUsd:
                 1_000_000_000,
               volatility24h: 4,
+              marketCapUsd:
+                80_000_000_000,
             },
             metadata,
           });
@@ -131,6 +153,44 @@ describe(
           dataSource: "live",
           source: "CoinGecko",
           isStale: true,
+          marketQuality: {
+            score: 70,
+            level: "Good",
+            liquidityScore: 25,
+            marketCapScore: 25,
+            volatilityScore: 20,
+            freshnessScore: 0,
+          },
+        });
+      },
+    );
+
+    it(
+      "handles a missing market capitalization",
+      () => {
+        const opportunity =
+          buildCryptoOpportunity({
+            asset: "Unknown Cap",
+            symbol: "UNC",
+            market: {
+              price: 25,
+              priceChange24h: 2,
+              volume24hUsd:
+                100_000_000,
+              volatility24h: 5,
+              marketCapUsd: null,
+            },
+          });
+
+        expect(
+          opportunity.marketQuality,
+        ).toEqual({
+          score: 39,
+          level: "Poor",
+          liquidityScore: 12,
+          marketCapScore: 0,
+          volatilityScore: 12,
+          freshnessScore: 15,
         });
       },
     );
@@ -148,6 +208,8 @@ describe(
               volume24hUsd:
                 50_000_000,
               volatility24h: 10,
+              marketCapUsd:
+                250_000_000,
             },
           });
 
@@ -158,6 +220,14 @@ describe(
           risk: "High",
           trend: "Bearish",
           expectedReturn: "+2.04%",
+          marketQuality: {
+            score: 45,
+            level: "Fair",
+            liquidityScore: 12,
+            marketCapScore: 12,
+            volatilityScore: 6,
+            freshnessScore: 15,
+          },
         });
       },
     );
@@ -167,7 +237,8 @@ describe(
       () => {
         const opportunity =
           buildCryptoOpportunity({
-            asset: "Small Price Asset",
+            asset:
+              "Small Price Asset",
             symbol: "SPA",
             market: {
               price: 0.123456789,
@@ -175,6 +246,8 @@ describe(
               volume24hUsd:
                 250_000_000,
               volatility24h: 2,
+              marketCapUsd:
+                1_000_000_000,
             },
           });
 
@@ -189,7 +262,8 @@ describe(
       () => {
         expect(() =>
           buildCryptoOpportunity({
-            asset: "Invalid Asset",
+            asset:
+              "Invalid Asset",
             symbol: "BAD",
             market: {
               price: 0,
@@ -197,6 +271,8 @@ describe(
               volume24hUsd:
                 100_000_000,
               volatility24h: 2,
+              marketCapUsd:
+                1_000_000_000,
             },
           }),
         ).toThrow(
@@ -218,6 +294,8 @@ describe(
               volume24hUsd:
                 100_000_000,
               volatility24h: 2,
+              marketCapUsd:
+                1_000_000_000,
             },
           }),
         ).toThrow(
@@ -239,6 +317,8 @@ describe(
               volume24hUsd:
                 100_000_000,
               volatility24h: 2,
+              marketCapUsd:
+                1_000_000_000,
             },
           }),
         ).toThrow(

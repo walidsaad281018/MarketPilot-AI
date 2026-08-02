@@ -6,6 +6,9 @@ import {
   createLiveMarketDataMetadata,
 } from "@/lib/market/marketDataMetadata";
 import {
+  assessMarketQuality,
+} from "@/lib/marketQuality/marketQualityEngine";
+import {
   buildCryptoOpportunity,
   type BuiltCryptoOpportunity,
 } from "@/lib/opportunities/cryptoOpportunityBuilder";
@@ -231,10 +234,28 @@ function createFallbackOpportunities():
   return cryptoOpportunities.map(
     (
       opportunity,
-    ): LiveCryptoOpportunity => ({
-      ...opportunity,
-      currentPriceUsd: null,
-      ...fallbackMetadata,
-    }),
+    ): LiveCryptoOpportunity => {
+      const marketQuality =
+        assessMarketQuality({
+          volume24hUsd:
+            opportunity.volume24hUsd ??
+            0,
+          marketCapUsd: null,
+          volatility24h:
+            opportunity.volatility24h ??
+            0,
+          isStale:
+            fallbackMetadata.isStale,
+        });
+
+      return {
+        ...opportunity,
+        currentPriceUsd: null,
+        ...fallbackMetadata,
+        marketQuality,
+      };
+    },
   );
 }
+
+

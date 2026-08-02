@@ -6,6 +6,9 @@ import {
   createFallbackMarketDataMetadata,
   type MarketDataMetadata,
 } from "@/lib/market/marketDataMetadata";
+import {
+  assessMarketQuality,
+} from "@/lib/marketQuality/marketQualityEngine";
 import type {
   OpportunityWithMarketMetadata,
 } from "@/lib/opportunities/opportunityWithMarketMetadata";
@@ -23,7 +26,10 @@ export type CryptoOpportunityMarketInput =
     | "priceChange24h"
     | "volume24hUsd"
     | "volatility24h"
-  >;
+  > & {
+    marketCapUsd?:
+      number | null;
+  };
 
 export type BuildCryptoOpportunityInput = {
   asset: string;
@@ -70,6 +76,19 @@ export function buildCryptoOpportunity({
         market.volume24hUsd,
     });
 
+  const marketQuality =
+    assessMarketQuality({
+      volume24hUsd:
+        market.volume24hUsd,
+      marketCapUsd:
+        market.marketCapUsd ??
+        null,
+      volatility24h:
+        market.volatility24h,
+      isStale:
+        metadata.isStale,
+    });
+
   return {
     rank: 0,
     asset: normalizedAsset,
@@ -113,6 +132,7 @@ export function buildCryptoOpportunity({
     volume24hUsd:
       market.volume24hUsd,
     ...metadata,
+    marketQuality,
   };
 }
 
@@ -280,3 +300,4 @@ function roundToTwoDecimals(
     100
   );
 }
+

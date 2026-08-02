@@ -4,7 +4,13 @@
 import type {
   MarketDataMetadata,
 } from "@/lib/market/marketDataMetadata";
+import type {
+  MarketQualityAssessment,
+} from "@/lib/marketQuality/marketQualityEngine";
 
 export type OpportunityWithMarketMetadata =
   Opportunity &
-  MarketDataMetadata;
+  MarketDataMetadata & {
+    marketQuality:
+      MarketQualityAssessment;
+  };

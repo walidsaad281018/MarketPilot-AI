@@ -413,6 +413,14 @@ function createFallbackOpportunity(
     source: "MarketPilot Demo",
     lastUpdated: null,
     isStale: false,
+    marketQuality: {
+      score: 72,
+      level: "Good",
+      liquidityScore: 25,
+      marketCapScore: 12,
+      volatilityScore: 20,
+      freshnessScore: 15,
+    },
     ...overrides,
   };
 }
@@ -438,3 +446,4 @@ function isSortedByScore(
     },
   );
 }
+
