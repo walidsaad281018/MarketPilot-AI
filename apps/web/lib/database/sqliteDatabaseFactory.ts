@@ -6,14 +6,22 @@ import {
   DatabaseSync,
 } from "node:sqlite";
 
+import {
+  runDatabaseMigrations,
+} from "@/lib/database/migrations";
+
 export type OpenSqliteDatabaseOptions = {
   databasePath: string;
   timeoutMilliseconds?: number;
+  migrationsDirectory?: string;
+  applyMigrations?: boolean;
 };
 
 export function openSqliteDatabase({
   databasePath,
   timeoutMilliseconds = 5_000,
+  migrationsDirectory,
+  applyMigrations = true,
 }: OpenSqliteDatabaseOptions): DatabaseSync {
   ensureDatabaseDirectory(
     databasePath,
@@ -33,6 +41,13 @@ export function openSqliteDatabase({
       database,
       databasePath,
     );
+
+    if (applyMigrations) {
+      runDatabaseMigrations({
+        database,
+        migrationsDirectory,
+      });
+    }
 
     return database;
   } catch (error) {
