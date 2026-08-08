@@ -7,8 +7,25 @@ import {
 } from "@/lib/application/productionApplication";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(
+  request: Request,
+) {
+  return runMarketCycle(
+    request,
+  );
+}
 
 export async function POST(
+  request: Request,
+) {
+  return runMarketCycle(
+    request,
+  );
+}
+
+async function runMarketCycle(
   request: Request,
 ) {
   const authorizationResult =

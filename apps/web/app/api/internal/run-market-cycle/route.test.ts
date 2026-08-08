@@ -27,6 +27,7 @@ vi.mock(
 );
 
 import {
+  GET,
   POST,
 } from "@/app/api/internal/run-market-cycle/route";
 
@@ -287,8 +288,10 @@ describe(
 
 function createRequest({
   token,
+  method = "POST",
 }: {
   token?: string;
+  method?: "GET" | "POST";
 } = {}): Request {
   const headers =
     new Headers();
@@ -303,8 +306,82 @@ function createRequest({
   return new Request(
     "http://localhost:3000/api/internal/run-market-cycle",
     {
-      method: "POST",
+      method,
       headers,
     },
   );
 }
+
+describe(
+  "GET /api/internal/run-market-cycle",
+  () => {
+    it(
+      "executes the market cycle for an authorized scheduler request",
+      async () => {
+        process.env.CRON_SECRET =
+          "test-cron-secret";
+
+        publishMock
+          .mockReset()
+          .mockResolvedValue({
+            publishedRecords: [],
+            publishedCount: 0,
+          });
+
+        const response =
+          await GET(
+            createRequest({
+              token:
+                "test-cron-secret",
+              method: "GET",
+            }),
+          );
+
+        const body =
+          await response.json();
+
+        expect(
+          response.status,
+        ).toBe(200);
+
+        expect(
+          publishMock,
+        ).toHaveBeenCalledOnce();
+
+        expect(body).toEqual({
+          success: true,
+          publishedCount: 0,
+          publishedRecords: [],
+        });
+      },
+    );
+
+    it(
+      "rejects an unauthorized scheduler request",
+      async () => {
+        process.env.CRON_SECRET =
+          "test-cron-secret";
+
+        publishMock
+          .mockReset();
+
+        const response =
+          await GET(
+            createRequest({
+              token:
+                "wrong-secret",
+              method: "GET",
+            }),
+          );
+
+        expect(
+          response.status,
+        ).toBe(401);
+
+        expect(
+          publishMock,
+        ).not.toHaveBeenCalled();
+      },
+    );
+  },
+);
