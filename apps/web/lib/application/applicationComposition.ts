@@ -147,6 +147,8 @@ export function createApplicationComposition({
           marketSnapshotCaptureService,
         marketProvider:
           cryptoProvider,
+        pendingVerificationService:
+          pendingRecommendationVerificationService,
       });
 
     return {

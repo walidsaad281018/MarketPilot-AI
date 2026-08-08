@@ -670,3 +670,288 @@ describe(
     );
   },
 );
+
+describe(
+  "automatic pending recommendation verification",
+  () => {
+    it(
+      "verifies pending recommendations after snapshot capture and before publishing",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [
+                  createPublishedRecord(
+                    candidate,
+                  ),
+                ],
+                publishedCount: 1,
+              }),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const pendingVerificationService = {
+          verifyPending:
+            vi.fn()
+              .mockReturnValue({
+                pendingCount: 1,
+                eligibleCount: 1,
+                verifiedCount: 1,
+                skippedCount: 0,
+                verifiedRecords: [],
+              }),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        await service.publish();
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledOnce();
+
+        expect(
+          snapshotCaptureService
+            .capture
+            .mock
+            .invocationCallOrder[0],
+        ).toBeLessThan(
+          pendingVerificationService
+            .verifyPending
+            .mock
+            .invocationCallOrder[0],
+        );
+
+        expect(
+          pendingVerificationService
+            .verifyPending
+            .mock
+            .invocationCallOrder[0],
+        ).toBeLessThan(
+          publisher
+            .publish
+            .mock
+            .invocationCallOrder[0],
+        );
+      },
+    );
+
+    it(
+      "does not verify pending recommendations when no candidates exist",
+      async () => {
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue(
+              [],
+            );
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const pendingVerificationService = {
+          verifyPending:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            pendingVerificationService,
+          });
+
+        await service.publish();
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "does not run verification when snapshot capture fails",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockImplementation(
+                () => {
+                  throw new Error(
+                    "Snapshot persistence failed.",
+                  );
+                },
+              ),
+        };
+
+        const pendingVerificationService = {
+          verifyPending:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        await expect(
+          service.publish(),
+        ).rejects.toThrow(
+          "Snapshot persistence failed.",
+        );
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "propagates verification errors and prevents publishing new recommendations",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const pendingVerificationService = {
+          verifyPending:
+            vi.fn()
+              .mockImplementation(
+                () => {
+                  throw new Error(
+                    "Pending verification failed.",
+                  );
+                },
+              ),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        await expect(
+          service.publish(),
+        ).rejects.toThrow(
+          "Pending verification failed.",
+        );
+
+        expect(
+          snapshotCaptureService
+            .capture,
+        ).toHaveBeenCalledOnce();
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledOnce();
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+  },
+);

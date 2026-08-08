@@ -13,6 +13,9 @@ import {
 import type {
   MarketProvider,
 } from "@/lib/providers/marketProvider";
+import type {
+  PendingRecommendationVerificationService,
+} from "@/lib/services/pendingRecommendationVerificationService";
 
 type CandidateGenerator =
   typeof getLiveCryptoRecommendationCandidates;
@@ -32,12 +35,19 @@ type QuoteProvider = Pick<
   "getQuotes"
 >;
 
+type PendingVerificationService = Pick<
+  PendingRecommendationVerificationService,
+  "verifyPending"
+>;
+
 type LiveCryptoRecommendationPublicationDependencies = {
   candidateGenerator?: CandidateGenerator;
   publisher?: Publisher;
   snapshotCaptureService?:
     SnapshotCaptureService;
   marketProvider?: QuoteProvider;
+  pendingVerificationService?:
+    PendingVerificationService;
 };
 
 export class LiveCryptoRecommendationPublicationService {
@@ -53,6 +63,9 @@ export class LiveCryptoRecommendationPublicationService {
   private readonly marketProvider:
     QuoteProvider | undefined;
 
+  private readonly pendingVerificationService:
+    PendingVerificationService | undefined;
+
   constructor({
     candidateGenerator =
       getLiveCryptoRecommendationCandidates,
@@ -60,6 +73,7 @@ export class LiveCryptoRecommendationPublicationService {
       recommendationPublisher,
     snapshotCaptureService,
     marketProvider,
+    pendingVerificationService,
   }: LiveCryptoRecommendationPublicationDependencies = {}) {
     validateSnapshotDependencies(
       snapshotCaptureService,
@@ -77,6 +91,9 @@ export class LiveCryptoRecommendationPublicationService {
 
     this.marketProvider =
       marketProvider;
+
+    this.pendingVerificationService =
+      pendingVerificationService;
   }
 
   async publish(
@@ -103,6 +120,9 @@ export class LiveCryptoRecommendationPublicationService {
           candidate.symbol,
       ),
     );
+
+    this.pendingVerificationService
+      ?.verifyPending();
 
     return this.publisher.publish(
       candidates,
