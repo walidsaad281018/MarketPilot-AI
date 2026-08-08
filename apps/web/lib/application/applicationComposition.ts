@@ -32,6 +32,12 @@ import {
 import {
   RecommendationHistoryService,
 } from "@/lib/services/recommendationHistoryService";
+import {
+  RecommendationVerificationService,
+} from "@/lib/services/recommendationVerificationService";
+import {
+  PendingRecommendationVerificationService,
+} from "@/lib/services/pendingRecommendationVerificationService";
 
 export type CreateApplicationCompositionOptions = {
   databasePath?: string;
@@ -56,6 +62,12 @@ export type ApplicationComposition = {
 
   recommendationPublisher:
     RecommendationPublisher;
+
+  recommendationVerificationService:
+    RecommendationVerificationService;
+
+  pendingRecommendationVerificationService:
+    PendingRecommendationVerificationService;
 
   liveCryptoRecommendationPublicationService:
     LiveCryptoRecommendationPublicationService;
@@ -115,6 +127,18 @@ export function createApplicationComposition({
         repository,
       });
 
+    const recommendationVerificationService =
+      new RecommendationVerificationService(
+        marketSnapshotRepository,
+      );
+
+    const pendingRecommendationVerificationService =
+      new PendingRecommendationVerificationService({
+        repository,
+        verificationService:
+          recommendationVerificationService,
+      });
+
     const liveCryptoRecommendationPublicationService =
       new LiveCryptoRecommendationPublicationService({
         publisher:
@@ -132,6 +156,8 @@ export function createApplicationComposition({
       recommendationHistoryService,
       recommendationService,
       recommendationPublisher,
+      recommendationVerificationService,
+      pendingRecommendationVerificationService,
       liveCryptoRecommendationPublicationService,
       seedResult,
       close: () => {

@@ -473,3 +473,215 @@ describe(
     );
   },
 );
+
+describe(
+  "RecommendationRepository updates",
+  () => {
+    it(
+      "updates an existing recommendation",
+      () => {
+        const repository =
+          new RecommendationRepository(
+            [],
+          );
+
+        const original =
+          createRecommendation();
+
+        repository.save(
+          original,
+        );
+
+        const updated = {
+          ...original,
+          evaluationPrice: 110,
+          actualReturn: 10,
+          status:
+            "Successful" as const,
+          targetReached: true,
+        };
+
+        expect(
+          repository.update(
+            updated,
+          ),
+        ).toEqual(
+          updated,
+        );
+
+        expect(
+          repository.getById(
+            original.id,
+          ),
+        ).toEqual(
+          updated,
+        );
+      },
+    );
+
+    it(
+      "updates IDs case-insensitively",
+      () => {
+        const repository =
+          new RecommendationRepository(
+            [],
+          );
+
+        repository.save(
+          createRecommendation(),
+        );
+
+        repository.update({
+          ...createRecommendation(),
+          id: "mp-test-0001",
+          evaluationPrice: 102,
+          actualReturn: 2,
+          status:
+            "Unsuccessful",
+          targetReached: false,
+        });
+
+        expect(
+          repository.getById(
+            "MP-TEST-0001",
+          ),
+        ).toMatchObject({
+          evaluationPrice: 102,
+          actualReturn: 2,
+          status:
+            "Unsuccessful",
+          targetReached: false,
+        });
+      },
+    );
+
+    it(
+      "rejects updating a missing recommendation",
+      () => {
+        const repository =
+          new RecommendationRepository(
+            [],
+          );
+
+        expect(() =>
+          repository.update(
+            createRecommendation(),
+          ),
+        ).toThrow(
+          "Recommendation does not exist",
+        );
+      },
+    );
+
+    it(
+      "rejects duplicate IDs in an update batch",
+      () => {
+        const repository =
+          new RecommendationRepository(
+            [],
+          );
+
+        repository.saveMany([
+          createRecommendation(),
+          createRecommendation({
+            id: "MP-TEST-0002",
+            symbol: "ETH",
+            publishedAt:
+              "2026-08-02",
+          }),
+        ]);
+
+        expect(() =>
+          repository.updateMany([
+            createRecommendation({
+              status:
+                "Successful",
+              evaluationPrice: 110,
+              actualReturn: 10,
+              targetReached: true,
+            }),
+            createRecommendation({
+              id: "mp-test-0001",
+              symbol: "ETH",
+              publishedAt:
+                "2026-08-02",
+              status:
+                "Successful",
+              evaluationPrice: 110,
+              actualReturn: 10,
+              targetReached: true,
+            }),
+          ]),
+        ).toThrow(
+          "Duplicate recommendation ID in update batch",
+        );
+      },
+    );
+
+    it(
+      "does not partially update when a batch is invalid",
+      () => {
+        const repository =
+          new RecommendationRepository(
+            [],
+          );
+
+        const first =
+          createRecommendation();
+
+        const second =
+          createRecommendation({
+            id: "MP-TEST-0002",
+            symbol: "ETH",
+            publishedAt:
+              "2026-08-02",
+          });
+
+        repository.saveMany([
+          first,
+          second,
+        ]);
+
+        expect(() =>
+          repository.updateMany([
+            {
+              ...first,
+              evaluationPrice: 110,
+              actualReturn: 10,
+              status:
+                "Successful",
+              targetReached: true,
+            },
+            {
+              ...second,
+              id: "MISSING-ID",
+              evaluationPrice: 110,
+              actualReturn: 10,
+              status:
+                "Successful",
+              targetReached: true,
+            },
+          ]),
+        ).toThrow(
+          "Recommendation does not exist",
+        );
+
+        expect(
+          repository.getById(
+            first.id,
+          ),
+        ).toEqual(
+          first,
+        );
+
+        expect(
+          repository.getById(
+            second.id,
+          ),
+        ).toEqual(
+          second,
+        );
+      },
+    );
+  },
+);

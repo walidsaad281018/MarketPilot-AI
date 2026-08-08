@@ -185,6 +185,138 @@ export class RecommendationRepository
       cloneRecommendation,
     );
   }
+
+  update(
+    recommendation:
+      RecommendationRecord,
+  ): RecommendationRecord {
+    const [updatedRecommendation] =
+      this.updateMany([
+        recommendation,
+      ]);
+
+    if (!updatedRecommendation) {
+      throw new Error(
+        "Recommendation was not updated.",
+      );
+    }
+
+    return updatedRecommendation;
+  }
+
+  updateMany(
+    recommendations:
+      RecommendationRecord[],
+  ): RecommendationRecord[] {
+    if (
+      recommendations.length === 0
+    ) {
+      return [];
+    }
+
+    const recordsToUpdate =
+      recommendations.map(
+        cloneRecommendation,
+      );
+
+    const batchIds =
+      new Set<string>();
+
+    for (
+      const recommendation
+      of recordsToUpdate
+    ) {
+      const normalizedId =
+        normalizeIdentifier(
+          recommendation.id,
+        );
+
+      if (
+        batchIds.has(
+          normalizedId,
+        )
+      ) {
+        throw new Error(
+          `Duplicate recommendation ID in update batch: ${recommendation.id}.`,
+        );
+      }
+
+      const existingIndex =
+        this.records.findIndex(
+          (record) =>
+            normalizeIdentifier(
+              record.id,
+            ) === normalizedId,
+        );
+
+      if (
+        existingIndex === -1
+      ) {
+        throw new Error(
+          `Recommendation does not exist: ${recommendation.id}.`,
+        );
+      }
+
+      batchIds.add(
+        normalizedId,
+      );
+    }
+
+    const updatedIds =
+      new Set(
+        recordsToUpdate.map(
+          (recommendation) =>
+            normalizeIdentifier(
+              recommendation.id,
+            ),
+        ),
+      );
+
+    const prospectiveRecords = [
+      ...this.records.filter(
+        (record) =>
+          !updatedIds.has(
+            normalizeIdentifier(
+              record.id,
+            ),
+          ),
+      ),
+      ...recordsToUpdate,
+    ];
+
+    validateStoredRecords(
+      prospectiveRecords,
+    );
+
+    for (
+      const recommendation
+      of recordsToUpdate
+    ) {
+      const normalizedId =
+        normalizeIdentifier(
+          recommendation.id,
+        );
+
+      const existingIndex =
+        this.records.findIndex(
+          (record) =>
+            normalizeIdentifier(
+              record.id,
+            ) === normalizedId,
+        );
+
+      this.records[
+        existingIndex
+      ] =
+        cloneRecommendation(
+          recommendation,
+        );
+    }
+
+    return recordsToUpdate.map(
+      cloneRecommendation,
+    );
+  }
 }
 
 function validateStoredRecords(

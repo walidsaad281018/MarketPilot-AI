@@ -38,4 +38,12 @@ export interface RecommendationWriteDataSource
   saveMany(
     recommendations: RecommendationRecord[],
   ): RecommendationRecord[];
+
+  update(
+    recommendation: RecommendationRecord,
+  ): RecommendationRecord;
+
+  updateMany(
+    recommendations: RecommendationRecord[],
+  ): RecommendationRecord[];
 }

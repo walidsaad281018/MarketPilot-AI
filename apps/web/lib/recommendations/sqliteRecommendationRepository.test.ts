@@ -392,3 +392,265 @@ describe(
     );
   },
 );
+
+describe(
+  "SqliteRecommendationRepository updates",
+  () => {
+    it(
+      "persists an updated recommendation",
+      () => {
+        const repository =
+          new SqliteRecommendationRepository(
+            new DatabaseSync(
+              ":memory:",
+            ),
+          );
+
+        try {
+          const original =
+            createRecommendation();
+
+          repository.save(
+            original,
+          );
+
+          const updated = {
+            ...original,
+            evaluationPrice: 110,
+            actualReturn: 10,
+            status:
+              "Successful" as const,
+            targetReached: true,
+          };
+
+          expect(
+            repository.update(
+              updated,
+            ),
+          ).toEqual(
+            updated,
+          );
+
+          expect(
+            repository.getById(
+              original.id,
+            ),
+          ).toEqual(
+            updated,
+          );
+        } finally {
+          repository.close();
+        }
+      },
+    );
+
+    it(
+      "updates IDs case-insensitively",
+      () => {
+        const repository =
+          new SqliteRecommendationRepository(
+            new DatabaseSync(
+              ":memory:",
+            ),
+          );
+
+        try {
+          repository.save(
+            createRecommendation(),
+          );
+
+          repository.update({
+            ...createRecommendation(),
+            id:
+              "mp-sqlite-0001",
+            evaluationPrice:
+              102,
+            actualReturn: 2,
+            status:
+              "Unsuccessful",
+            targetReached:
+              false,
+          });
+
+          expect(
+            repository.getById(
+              "MP-SQLITE-0001",
+            ),
+          ).toMatchObject({
+            evaluationPrice:
+              102,
+            actualReturn: 2,
+            status:
+              "Unsuccessful",
+            targetReached:
+              false,
+          });
+        } finally {
+          repository.close();
+        }
+      },
+    );
+
+    it(
+      "rejects updating a missing recommendation",
+      () => {
+        const repository =
+          new SqliteRecommendationRepository(
+            new DatabaseSync(
+              ":memory:",
+            ),
+          );
+
+        try {
+          expect(() =>
+            repository.update(
+              createRecommendation(),
+            ),
+          ).toThrow(
+            "Recommendation does not exist",
+          );
+        } finally {
+          repository.close();
+        }
+      },
+    );
+
+    it(
+      "rolls back the complete update batch when one recommendation does not exist",
+      () => {
+        const repository =
+          new SqliteRecommendationRepository(
+            new DatabaseSync(
+              ":memory:",
+            ),
+          );
+
+        try {
+          const first =
+            createRecommendation();
+
+          const second =
+            createRecommendation({
+              id:
+                "MP-SQLITE-0002",
+              symbol: "ETH",
+              publishedAt:
+                "2026-08-02",
+            });
+
+          repository.saveMany([
+            first,
+            second,
+          ]);
+
+          expect(() =>
+            repository.updateMany([
+              {
+                ...first,
+                evaluationPrice:
+                  110,
+                actualReturn: 10,
+                status:
+                  "Successful",
+                targetReached:
+                  true,
+              },
+              {
+                ...second,
+                id:
+                  "MISSING-ID",
+                evaluationPrice:
+                  110,
+                actualReturn: 10,
+                status:
+                  "Successful",
+                targetReached:
+                  true,
+              },
+            ]),
+          ).toThrow(
+            "Recommendation does not exist",
+          );
+
+          expect(
+            repository.getById(
+              first.id,
+            ),
+          ).toEqual(
+            first,
+          );
+
+          expect(
+            repository.getById(
+              second.id,
+            ),
+          ).toEqual(
+            second,
+          );
+        } finally {
+          repository.close();
+        }
+      },
+    );
+
+    it(
+      "rejects duplicate IDs in an update batch",
+      () => {
+        const repository =
+          new SqliteRecommendationRepository(
+            new DatabaseSync(
+              ":memory:",
+            ),
+          );
+
+        try {
+          repository.saveMany([
+            createRecommendation(),
+            createRecommendation({
+              id:
+                "MP-SQLITE-0002",
+              symbol: "ETH",
+              publishedAt:
+                "2026-08-02",
+            }),
+          ]);
+
+          expect(() =>
+            repository.updateMany([
+              {
+                ...createRecommendation(),
+                evaluationPrice:
+                  110,
+                actualReturn: 10,
+                status:
+                  "Successful",
+                targetReached:
+                  true,
+              },
+              {
+                ...createRecommendation({
+                  id:
+                    "mp-sqlite-0001",
+                  symbol: "ETH",
+                  publishedAt:
+                    "2026-08-02",
+                }),
+                evaluationPrice:
+                  110,
+                actualReturn: 10,
+                status:
+                  "Successful",
+                targetReached:
+                  true,
+              },
+            ]),
+          ).toThrow(
+            "Duplicate recommendation ID in update batch",
+          );
+        } finally {
+          repository.close();
+        }
+      },
+    );
+  },
+);

@@ -113,6 +113,26 @@ const insertRecommendationSql = `
   );
 `;
 
+const updateRecommendationSql = `
+  UPDATE recommendations
+  SET
+    asset = $asset,
+    symbol = $symbol,
+    category = $category,
+    published_at = $publishedAt,
+    evaluation_date = $evaluationDate,
+    entry_price = $entryPrice,
+    evaluation_price = $evaluationPrice,
+    target_return = $targetReturn,
+    score = $score,
+    confidence = $confidence,
+    target_price = $targetPrice,
+    actual_return = $actualReturn,
+    status = $status,
+    target_reached = $targetReached
+  WHERE id = $id COLLATE NOCASE;
+`;
+
 const selectColumns = `
   id,
   asset,
@@ -150,6 +170,9 @@ export class SqliteRecommendationRepository
   private readonly insertStatement:
     StatementSync;
 
+  private readonly updateStatement:
+    StatementSync;
+
   constructor(
     database: DatabaseSync,
   ) {
@@ -162,6 +185,11 @@ export class SqliteRecommendationRepository
     this.insertStatement =
       this.database.prepare(
         insertRecommendationSql,
+      );
+
+    this.updateStatement =
+      this.database.prepare(
+        updateRecommendationSql,
       );
   }
 
@@ -391,6 +419,121 @@ export class SqliteRecommendationRepository
           );
         } catch {
           // Preserve the original SQLite error.
+        }
+      }
+
+      throw translateSqliteError(
+        error,
+      );
+    }
+
+    return recommendations.map(
+      cloneRecommendation,
+    );
+  }
+
+  update(
+    recommendation:
+      RecommendationRecord,
+  ): RecommendationRecord {
+    const [updatedRecommendation] =
+      this.updateMany([
+        recommendation,
+      ]);
+
+    if (!updatedRecommendation) {
+      throw new Error(
+        "Recommendation was not updated.",
+      );
+    }
+
+    return updatedRecommendation;
+  }
+
+  updateMany(
+    recommendations:
+      RecommendationRecord[],
+  ): RecommendationRecord[] {
+    if (
+      recommendations.length === 0
+    ) {
+      return [];
+    }
+
+    const normalizedIds =
+      new Set<string>();
+
+    for (
+      const recommendation
+      of recommendations
+    ) {
+      const normalizedId =
+        recommendation.id
+          .trim()
+          .toUpperCase();
+
+      if (
+        normalizedIds.has(
+          normalizedId,
+        )
+      ) {
+        throw new Error(
+          `Duplicate recommendation ID in update batch: ${recommendation.id}.`,
+        );
+      }
+
+      normalizedIds.add(
+        normalizedId,
+      );
+    }
+
+    let transactionStarted =
+      false;
+
+    try {
+      this.database.exec(
+        "BEGIN IMMEDIATE TRANSACTION;",
+      );
+
+      transactionStarted =
+        true;
+
+      for (
+        const recommendation
+        of recommendations
+      ) {
+        const result =
+          this.updateStatement.run(
+            toSqliteParameters(
+              recommendation,
+            ),
+          );
+
+        if (
+          Number(
+            result.changes,
+          ) === 0
+        ) {
+          throw new Error(
+            `Recommendation does not exist: ${recommendation.id}.`,
+          );
+        }
+      }
+
+      this.database.exec(
+        "COMMIT;",
+      );
+
+      transactionStarted =
+        false;
+    } catch (error) {
+      if (transactionStarted) {
+        try {
+          this.database.exec(
+            "ROLLBACK;",
+          );
+        } catch {
+          // Preserve the original update error.
         }
       }
 

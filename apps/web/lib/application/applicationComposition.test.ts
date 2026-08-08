@@ -337,3 +337,123 @@ function createTemporaryDatabase(): {
     temporaryDirectory,
   };
 }
+
+describe(
+  "historical recommendation verification composition",
+  () => {
+    it(
+      "verifies and persists a pending recommendation using stored market snapshots",
+      () => {
+        const composition =
+          createTestComposition({
+            seedDatabase: false,
+          });
+
+        composition
+          .recommendationPublisher
+          .publish([
+            {
+              id:
+                "MP-HISTORICAL-VERIFY-001",
+              asset: "Bitcoin",
+              symbol: "BTC",
+              category: "Crypto",
+              publishedAt:
+                "2026-08-01",
+              evaluationDate:
+                "2026-08-08",
+              entryPrice: 100,
+              evaluationPrice: null,
+              targetReturn: 5,
+              score: 90,
+              confidence: 88,
+            },
+          ]);
+
+        composition
+          .marketSnapshotCaptureService
+          .capture({
+            quotes: [
+              {
+                symbol: "BTC",
+                category: "crypto",
+                price: 108,
+                priceChange24h: 3,
+                volume24hUsd:
+                  5_000_000_000,
+                marketCapUsd:
+                  1_900_000_000_000,
+                volatility24h: 5,
+                lastUpdated:
+                  "2026-08-05T11:59:30.000Z",
+                source:
+                  "CoinGecko",
+              },
+            ],
+            capturedAt:
+              new Date(
+                "2026-08-05T12:00:00.000Z",
+              ),
+          });
+
+        composition
+          .marketSnapshotCaptureService
+          .capture({
+            quotes: [
+              {
+                symbol: "BTC",
+                category: "crypto",
+                price: 102,
+                priceChange24h: 1,
+                volume24hUsd:
+                  4_500_000_000,
+                marketCapUsd:
+                  1_850_000_000_000,
+                volatility24h: 4,
+                lastUpdated:
+                  "2026-08-08T11:59:30.000Z",
+                source:
+                  "CoinGecko",
+              },
+            ],
+            capturedAt:
+              new Date(
+                "2026-08-08T12:00:00.000Z",
+              ),
+          });
+
+        const result =
+          composition
+            .pendingRecommendationVerificationService
+            .verifyPending({
+              currentDate:
+                new Date(
+                  "2026-08-09T00:00:00.000Z",
+                ),
+            });
+
+        expect(
+          result.verifiedCount,
+        ).toBe(1);
+
+        expect(
+          result.verifiedRecords,
+        ).toHaveLength(1);
+
+        expect(
+          composition
+            .repository
+            .getById(
+              "MP-HISTORICAL-VERIFY-001",
+            ),
+        ).toMatchObject({
+          evaluationPrice: 102,
+          actualReturn: 2,
+          status:
+            "Successful",
+          targetReached: true,
+        });
+      },
+    );
+  },
+);
