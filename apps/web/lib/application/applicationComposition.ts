@@ -1,4 +1,16 @@
 ﻿import {
+  MarketSnapshotCaptureService,
+} from "@/lib/marketSnapshots/marketSnapshotCaptureService";
+import {
+  createSqliteMarketSnapshotRepository,
+} from "@/lib/marketSnapshots/marketSnapshotRepositoryFactory";
+import type {
+  SqliteMarketSnapshotRepository,
+} from "@/lib/marketSnapshots/sqliteMarketSnapshotRepository";
+import {
+  cryptoProvider,
+} from "@/lib/providers/marketProvider";
+import {
   LiveCryptoRecommendationPublicationService,
 } from "@/lib/recommendations/liveCryptoRecommendationPublicationService";
 import {
@@ -29,16 +41,28 @@ export type CreateApplicationCompositionOptions = {
 export type ApplicationComposition = {
   repository:
     SqliteRecommendationRepository;
+
+  marketSnapshotRepository:
+    SqliteMarketSnapshotRepository;
+
+  marketSnapshotCaptureService:
+    MarketSnapshotCaptureService;
+
   recommendationHistoryService:
     RecommendationHistoryService;
+
   recommendationService:
     RecommendationService;
+
   recommendationPublisher:
     RecommendationPublisher;
+
   liveCryptoRecommendationPublicationService:
     LiveCryptoRecommendationPublicationService;
+
   seedResult:
     SeedRecommendationsResult | null;
+
   close: () => void;
 };
 
@@ -52,13 +76,28 @@ export function createApplicationComposition({
       databasePath,
     });
 
+  let marketSnapshotRepository:
+    SqliteMarketSnapshotRepository |
+    undefined;
+
   try {
+    marketSnapshotRepository =
+      createSqliteMarketSnapshotRepository({
+        databasePath,
+      });
+
     const seedResult =
       seedDatabase
         ? new RecommendationSeedService({
             repository,
           }).seedIfEmpty()
         : null;
+
+    const marketSnapshotCaptureService =
+      new MarketSnapshotCaptureService({
+        repository:
+          marketSnapshotRepository,
+      });
 
     const recommendationHistoryService =
       new RecommendationHistoryService(
@@ -80,22 +119,31 @@ export function createApplicationComposition({
       new LiveCryptoRecommendationPublicationService({
         publisher:
           recommendationPublisher,
+        snapshotCaptureService:
+          marketSnapshotCaptureService,
+        marketProvider:
+          cryptoProvider,
       });
 
     return {
       repository,
+      marketSnapshotRepository,
+      marketSnapshotCaptureService,
       recommendationHistoryService,
       recommendationService,
       recommendationPublisher,
       liveCryptoRecommendationPublicationService,
       seedResult,
       close: () => {
+        marketSnapshotRepository?.close();
         repository.close();
       },
     };
   } catch (error) {
+    marketSnapshotRepository?.close();
     repository.close();
 
     throw error;
   }
 }
+

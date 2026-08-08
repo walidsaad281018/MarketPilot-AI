@@ -2,8 +2,12 @@
   mkdtempSync,
   rmSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import {
+  tmpdir,
+} from "node:os";
+import {
+  join,
+} from "node:path";
 
 import {
   afterEach,
@@ -59,30 +63,45 @@ describe(
             .recommendationHistoryService
             .getAllRecommendations();
 
-        expect(records.length).toBeGreaterThan(
-          0,
-        );
+        expect(
+          records.length,
+        ).toBeGreaterThan(0);
 
         expect(
-          composition.seedResult?.seeded,
+          composition
+            .seedResult
+            ?.seeded,
         ).toBe(true);
 
         expect(
-          composition.seedResult?.seededCount,
-        ).toBe(records.length);
+          composition
+            .seedResult
+            ?.seededCount,
+        ).toBe(
+          records.length,
+        );
 
         expect(
           composition
             .recommendationService
             .getRecommendation(
-              records[0]?.id ?? "",
+              records[0]?.id ??
+                "",
             ),
-        ).toEqual(records[0]);
+        ).toEqual(
+          records[0],
+        );
+
+        expect(
+          composition
+            .marketSnapshotRepository
+            .getAll(),
+        ).toEqual([]);
       },
     );
 
     it(
-      "shares one repository between reading and publishing services",
+      "shares one recommendation repository between reading and publishing services",
       () => {
         const composition =
           createTestComposition({
@@ -105,7 +124,8 @@ describe(
                 evaluationDate:
                   "2026-08-08",
                 entryPrice: 100,
-                evaluationPrice: null,
+                evaluationPrice:
+                  null,
                 targetReturn: 5,
                 score: 90,
                 confidence: 88,
@@ -123,7 +143,63 @@ describe(
               "MP-COMPOSITION-0001",
             ),
         ).toEqual(
-          result.publishedRecords[0],
+          result
+            .publishedRecords[0],
+        );
+      },
+    );
+
+    it(
+      "shares the snapshot repository with the capture service",
+      () => {
+        const composition =
+          createTestComposition({
+            seedDatabase: false,
+          });
+
+        const result =
+          composition
+            .marketSnapshotCaptureService
+            .capture({
+              quotes: [
+                {
+                  symbol: "BTC",
+                  category:
+                    "crypto",
+                  price: 100_000,
+                  priceChange24h:
+                    3,
+                  volume24hUsd:
+                    5_000_000_000,
+                  marketCapUsd:
+                    1_900_000_000_000,
+                  volatility24h:
+                    5,
+                  lastUpdated:
+                    "2026-08-08T07:59:30.000Z",
+                  source:
+                    "CoinGecko",
+                },
+              ],
+              capturedAt:
+                new Date(
+                  "2026-08-08T08:00:00.000Z",
+                ),
+            });
+
+        expect(
+          result.capturedCount,
+        ).toBe(1);
+
+        expect(
+          composition
+            .marketSnapshotRepository
+            .getLatestBySymbol(
+              "btc",
+            )
+            ?.price,
+        ).toBe(
+          100_000,
         );
       },
     );
@@ -154,7 +230,8 @@ describe(
         const {
           databasePath,
           temporaryDirectory,
-        } = createTemporaryDatabase();
+        } =
+          createTemporaryDatabase();
 
         const firstComposition =
           createApplicationComposition({
@@ -168,7 +245,9 @@ describe(
             .length;
 
         expect(
-          firstComposition.seedResult?.seeded,
+          firstComposition
+            .seedResult
+            ?.seeded,
         ).toBe(true);
 
         firstComposition.close();
@@ -198,7 +277,9 @@ describe(
           secondComposition
             .recommendationHistoryService
             .getAllRecommendations(),
-        ).toHaveLength(firstCount);
+        ).toHaveLength(
+          firstCount,
+        );
       },
     );
   },
@@ -215,7 +296,8 @@ function createTestComposition({
   const {
     databasePath,
     temporaryDirectory,
-  } = createTemporaryDatabase();
+  } =
+    createTemporaryDatabase();
 
   const composition =
     createApplicationComposition({

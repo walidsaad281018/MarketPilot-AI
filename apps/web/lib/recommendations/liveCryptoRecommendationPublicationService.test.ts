@@ -1,9 +1,10 @@
-import {
+﻿import {
   describe,
   expect,
   it,
   vi,
 } from "vitest";
+
 import type {
   RecommendationRecord,
   RecommendationSourceRecord,
@@ -11,25 +12,35 @@ import type {
 import {
   LiveCryptoRecommendationPublicationService,
 } from "@/lib/recommendations/liveCryptoRecommendationPublicationService";
+import type {
+  MarketQuote,
+} from "@/lib/providers/marketProvider";
 
-function createCandidate(): RecommendationSourceRecord {
+function createCandidate(
+  overrides:
+    Partial<RecommendationSourceRecord> = {},
+): RecommendationSourceRecord {
   return {
     id: "MP-TEST-LIVE-BTC",
     asset: "Bitcoin",
     symbol: "BTC",
     category: "Crypto",
-    publishedAt: "2026-08-01",
-    evaluationDate: "2026-08-08",
+    publishedAt:
+      "2026-08-01",
+    evaluationDate:
+      "2026-08-08",
     entryPrice: 100,
     evaluationPrice: null,
     targetReturn: 5,
     score: 90,
     confidence: 88,
+    ...overrides,
   };
 }
 
 function createPublishedRecord(
-  candidate: RecommendationSourceRecord,
+  candidate:
+    RecommendationSourceRecord,
 ): RecommendationRecord {
   return {
     ...candidate,
@@ -40,6 +51,27 @@ function createPublishedRecord(
   };
 }
 
+function createQuote(
+  overrides:
+    Partial<MarketQuote> = {},
+): MarketQuote {
+  return {
+    symbol: "BTC",
+    category: "crypto",
+    price: 100,
+    priceChange24h: 3,
+    volume24hUsd:
+      5_000_000_000,
+    marketCapUsd:
+      1_900_000_000_000,
+    volatility24h: 5,
+    lastUpdated:
+      "2026-08-08T07:00:00.000Z",
+    source: "CoinGecko",
+    ...overrides,
+  };
+}
+
 describe(
   "LiveCryptoRecommendationPublicationService",
   () => {
@@ -47,10 +79,14 @@ describe(
       "returns an empty result when no live candidates are available",
       async () => {
         const candidateGenerator =
-          vi.fn().mockResolvedValue([]);
+          vi.fn()
+            .mockResolvedValue(
+              [],
+            );
 
         const publisher = {
-          publish: vi.fn(),
+          publish:
+            vi.fn(),
         };
 
         const service =
@@ -68,7 +104,9 @@ describe(
 
         expect(
           candidateGenerator,
-        ).toHaveBeenCalledWith({});
+        ).toHaveBeenCalledWith(
+          {},
+        );
 
         expect(
           publisher.publish,
@@ -93,21 +131,20 @@ describe(
           );
 
         const candidateGenerator =
-          vi
-            .fn()
+          vi.fn()
             .mockResolvedValue([
               candidate,
             ]);
 
         const publisher = {
-          publish: vi
-            .fn()
-            .mockReturnValue({
-              publishedRecords: [
-                publishedRecord,
-              ],
-              publishedCount: 1,
-            }),
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [
+                  publishedRecord,
+                ],
+                publishedCount: 1,
+              }),
         };
 
         const service =
@@ -142,10 +179,14 @@ describe(
       "forwards candidate-generation options",
       async () => {
         const candidateGenerator =
-          vi.fn().mockResolvedValue([]);
+          vi.fn()
+            .mockResolvedValue(
+              [],
+            );
 
         const publisher = {
-          publish: vi.fn(),
+          publish:
+            vi.fn(),
         };
 
         const service =
@@ -169,11 +210,392 @@ describe(
     );
 
     it(
+      "captures live market snapshots before publishing",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const quote =
+          createQuote();
+
+        const publishedRecord =
+          createPublishedRecord(
+            candidate,
+          );
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [
+                  publishedRecord,
+                ],
+                publishedCount: 1,
+              }),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                quote,
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).toHaveBeenCalledWith([
+          "BTC",
+        ]);
+
+        expect(
+          snapshotCaptureService.capture,
+        ).toHaveBeenCalledWith({
+          quotes: [
+            quote,
+          ],
+          capturedAt:
+            expect.any(Date),
+        });
+
+        expect(
+          snapshotCaptureService.capture
+            .mock
+            .invocationCallOrder[0],
+        ).toBeLessThan(
+          publisher.publish
+            .mock
+            .invocationCallOrder[0],
+        );
+      },
+    );
+
+    it(
+      "deduplicates symbols before requesting snapshot quotes",
+      async () => {
+        const candidates = [
+          createCandidate(),
+          createCandidate({
+            id:
+              "MP-TEST-LIVE-BTC-2",
+            symbol: "btc",
+          }),
+        ];
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue(
+              candidates,
+            );
+
+        const publisher = {
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [],
+                publishedCount: 0,
+              }),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).toHaveBeenCalledWith([
+          "BTC",
+        ]);
+      },
+    );
+
+    it(
+      "does not capture snapshots when no candidates exist",
+      async () => {
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue(
+              [],
+            );
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn(),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          snapshotCaptureService.capture,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "rejects incomplete market snapshot data before publishing",
+      async () => {
+        const candidates = [
+          createCandidate(),
+          createCandidate({
+            id:
+              "MP-TEST-LIVE-ETH",
+            asset: "Ethereum",
+            symbol: "ETH",
+          }),
+        ];
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue(
+              candidates,
+            );
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await expect(
+          service.publish(),
+        ).rejects.toThrow(
+          "Unable to capture market snapshots for: ETH.",
+        );
+
+        expect(
+          snapshotCaptureService.capture,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "propagates market provider errors before publishing",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockRejectedValue(
+                new Error(
+                  "Snapshot provider unavailable.",
+                ),
+              ),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await expect(
+          service.publish(),
+        ).rejects.toThrow(
+          "Snapshot provider unavailable.",
+        );
+
+        expect(
+          snapshotCaptureService.capture,
+        ).not.toHaveBeenCalled();
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "propagates snapshot persistence errors before publishing",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                createQuote(),
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockImplementation(
+                () => {
+                  throw new Error(
+                    "Snapshot persistence failed.",
+                  );
+                },
+              ),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+          });
+
+        await expect(
+          service.publish(),
+        ).rejects.toThrow(
+          "Snapshot persistence failed.",
+        );
+
+        expect(
+          publisher.publish,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
+    it(
+      "requires snapshot dependencies to be configured together",
+      () => {
+        expect(() =>
+          new LiveCryptoRecommendationPublicationService({
+            snapshotCaptureService: {
+              capture:
+                vi.fn(),
+            },
+          }),
+        ).toThrow(
+          "Snapshot capture service and market provider must be configured together.",
+        );
+      },
+    );
+
+    it(
       "propagates candidate-generation errors",
       async () => {
         const candidateGenerator =
-          vi
-            .fn()
+          vi.fn()
             .mockRejectedValue(
               new Error(
                 "Market provider unavailable.",
@@ -181,7 +603,8 @@ describe(
             );
 
         const publisher = {
-          publish: vi.fn(),
+          publish:
+            vi.fn(),
         };
 
         const service =
@@ -209,22 +632,21 @@ describe(
           createCandidate();
 
         const candidateGenerator =
-          vi
-            .fn()
+          vi.fn()
             .mockResolvedValue([
               candidate,
             ]);
 
         const publisher = {
-          publish: vi
-            .fn()
-            .mockImplementation(
-              () => {
-                throw new Error(
-                  "Recommendation ID already exists.",
-                );
-              },
-            ),
+          publish:
+            vi.fn()
+              .mockImplementation(
+                () => {
+                  throw new Error(
+                    "Recommendation ID already exists.",
+                  );
+                },
+              ),
         };
 
         const service =
