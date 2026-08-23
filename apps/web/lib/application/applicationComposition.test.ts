@@ -54,12 +54,15 @@ describe(
   () => {
     it(
       "creates SQLite-backed application services",
-      () => {
+      async () => {
         const composition =
           createTestComposition();
 
+        const seedResult =
+          await composition.seedResult;
+
         const records =
-          composition
+          await composition
             .recommendationHistoryService
             .getAllRecommendations();
 
@@ -68,21 +71,17 @@ describe(
         ).toBeGreaterThan(0);
 
         expect(
-          composition
-            .seedResult
-            ?.seeded,
+          seedResult?.seeded,
         ).toBe(true);
 
         expect(
-          composition
-            .seedResult
-            ?.seededCount,
+          seedResult?.seededCount,
         ).toBe(
           records.length,
         );
 
         expect(
-          composition
+          await composition
             .recommendationService
             .getRecommendation(
               records[0]?.id ??
@@ -102,14 +101,14 @@ describe(
 
     it(
       "shares one recommendation repository between reading and publishing services",
-      () => {
+      async () => {
         const composition =
           createTestComposition({
             seedDatabase: false,
           });
 
         const result =
-          composition
+          await composition
             .recommendationPublisher
             .publish([
               {
@@ -137,7 +136,7 @@ describe(
         ).toBe(1);
 
         expect(
-          composition
+          await composition
             .recommendationService
             .getRecommendation(
               "MP-COMPOSITION-0001",
@@ -151,14 +150,14 @@ describe(
 
     it(
       "shares the snapshot repository with the capture service",
-      () => {
+      async () => {
         const composition =
           createTestComposition({
             seedDatabase: false,
           });
 
         const result =
-          composition
+          await composition
             .marketSnapshotCaptureService
             .capture({
               quotes: [
@@ -206,7 +205,7 @@ describe(
 
     it(
       "does not seed when database seeding is disabled",
-      () => {
+      async () => {
         const composition =
           createTestComposition({
             seedDatabase: false,
@@ -217,7 +216,7 @@ describe(
         ).toBeNull();
 
         expect(
-          composition
+          await composition
             .recommendationHistoryService
             .getAllRecommendations(),
         ).toEqual([]);
@@ -226,7 +225,7 @@ describe(
 
     it(
       "does not duplicate seed records when reopened",
-      () => {
+      async () => {
         const {
           databasePath,
           temporaryDirectory,
@@ -238,16 +237,18 @@ describe(
             databasePath,
           });
 
+        const firstSeedResult =
+          await firstComposition.seedResult;
+
         const firstCount =
-          firstComposition
-            .recommendationHistoryService
-            .getAllRecommendations()
-            .length;
+          (
+            await firstComposition
+              .recommendationHistoryService
+              .getAllRecommendations()
+          ).length;
 
         expect(
-          firstComposition
-            .seedResult
-            ?.seeded,
+          firstSeedResult?.seeded,
         ).toBe(true);
 
         firstComposition.close();
@@ -266,7 +267,7 @@ describe(
         );
 
         expect(
-          secondComposition.seedResult,
+          await secondComposition.seedResult,
         ).toEqual({
           seeded: false,
           seededCount: 0,
@@ -274,7 +275,7 @@ describe(
         });
 
         expect(
-          secondComposition
+          await secondComposition
             .recommendationHistoryService
             .getAllRecommendations(),
         ).toHaveLength(
@@ -343,13 +344,13 @@ describe(
   () => {
     it(
       "verifies and persists a pending recommendation using stored market snapshots",
-      () => {
+      async () => {
         const composition =
           createTestComposition({
             seedDatabase: false,
           });
 
-        composition
+        await composition
           .recommendationPublisher
           .publish([
             {
@@ -370,7 +371,7 @@ describe(
             },
           ]);
 
-        composition
+        await composition
           .marketSnapshotCaptureService
           .capture({
             quotes: [
@@ -396,7 +397,7 @@ describe(
               ),
           });
 
-        composition
+        await composition
           .marketSnapshotCaptureService
           .capture({
             quotes: [
@@ -423,7 +424,7 @@ describe(
           });
 
         const result =
-          composition
+          await composition
             .pendingRecommendationVerificationService
             .verifyPending({
               currentDate:

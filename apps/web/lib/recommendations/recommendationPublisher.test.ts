@@ -58,14 +58,14 @@ describe(
   () => {
     it(
       "returns an empty result for an empty candidate batch",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
         } = createTestContext();
 
         const result =
-          publisher.publish([]);
+          await publisher.publish([]);
 
         expect(
           result.publishedCount,
@@ -83,7 +83,7 @@ describe(
 
     it(
       "converts and saves a valid candidate as a pending recommendation",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -93,7 +93,7 @@ describe(
           createCandidate();
 
         const result =
-          publisher.publish([
+          await publisher.publish([
             candidate,
           ]);
 
@@ -125,7 +125,7 @@ describe(
 
     it(
       "makes a published recommendation available through the history service",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -139,12 +139,12 @@ describe(
         const candidate =
           createCandidate();
 
-        publisher.publish([
+        await publisher.publish([
           candidate,
         ]);
 
         const recommendation =
-          historyService.getRecommendation(
+          await historyService.getRecommendation(
             candidate.id,
           );
 
@@ -158,7 +158,7 @@ describe(
         });
 
         expect(
-          historyService
+          await historyService
             .getAllRecommendations(),
         ).toHaveLength(1);
       },
@@ -166,7 +166,7 @@ describe(
 
     it(
       "saves every recommendation in a valid batch",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -183,7 +183,7 @@ describe(
           });
 
         const result =
-          publisher.publish([
+          await publisher.publish([
             firstCandidate,
             secondCandidate,
           ]);
@@ -211,7 +211,7 @@ describe(
 
     it(
       "rejects duplicate recommendation IDs inside one batch",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -226,12 +226,12 @@ describe(
             symbol: "ETH",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             firstCandidate,
             secondCandidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Duplicate recommendation ID in publication batch",
         );
 
@@ -243,7 +243,7 @@ describe(
 
     it(
       "treats recommendation IDs as case-insensitive",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -261,12 +261,12 @@ describe(
             symbol: "ETH",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             firstCandidate,
             secondCandidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Duplicate recommendation ID in publication batch",
         );
 
@@ -278,7 +278,7 @@ describe(
 
     it(
       "rejects duplicate symbol and publication-date combinations",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -294,12 +294,12 @@ describe(
             id: "MP-TEST-PUBLICATION-2",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             firstCandidate,
             secondCandidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Duplicate recommendation publication in batch",
         );
 
@@ -311,7 +311,7 @@ describe(
 
     it(
       "rejects an ID that already exists in the repository",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -327,7 +327,7 @@ describe(
               "2026-08-08",
           });
 
-        publisher.publish([
+        await publisher.publish([
           existingCandidate,
         ]);
 
@@ -342,11 +342,11 @@ describe(
               "2026-08-09",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             duplicateCandidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Recommendation ID already exists",
         );
 
@@ -358,13 +358,13 @@ describe(
 
     it(
       "rejects a publication that already exists in the repository",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
         } = createTestContext();
 
-        publisher.publish([
+        await publisher.publish([
           createCandidate({
             id: "MP-EXISTING-BTC",
           }),
@@ -375,11 +375,11 @@ describe(
             id: "MP-NEW-BTC",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             duplicatePublication,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "A recommendation already exists for BTC on 2026-08-01",
         );
 
@@ -391,7 +391,7 @@ describe(
 
     it(
       "rejects an evaluation date that is not later than publication",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -406,11 +406,11 @@ describe(
               "2026-08-20",
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             candidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Evaluation date must be later than publication date",
         );
 
@@ -422,7 +422,7 @@ describe(
 
     it(
       "validates the complete batch before saving records",
-      () => {
+      async () => {
         const {
           publisher,
           repository,
@@ -449,12 +449,12 @@ describe(
             entryPrice: 0,
           });
 
-        expect(() =>
+        await expect(
           publisher.publish([
             validCandidate,
             invalidCandidate,
           ]),
-        ).toThrow(
+        ).rejects.toThrow(
           "Entry price must be a positive finite number",
         );
 

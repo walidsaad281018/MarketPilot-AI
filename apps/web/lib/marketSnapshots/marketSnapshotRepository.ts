@@ -2,31 +2,45 @@
   MarketSnapshot,
   MarketSnapshotCategory,
 } from "@/lib/marketSnapshots/marketSnapshot";
+import type {
+  Awaitable,
+} from "@/lib/types/awaitable";
 
 export interface MarketSnapshotRepository {
-  getAll(): MarketSnapshot[];
+  getAll():
+    Awaitable<MarketSnapshot[]>;
 
   getById(
     snapshotId: string,
-  ): MarketSnapshot | undefined;
+  ):
+    Awaitable<
+      MarketSnapshot | undefined
+    >;
 
   getBySymbol(
     symbol: string,
-  ): MarketSnapshot[];
+  ):
+    Awaitable<MarketSnapshot[]>;
 
   getByCategory(
     category: MarketSnapshotCategory,
-  ): MarketSnapshot[];
+  ):
+    Awaitable<MarketSnapshot[]>;
 
   getLatestBySymbol(
     symbol: string,
-  ): MarketSnapshot | undefined;
+  ):
+    Awaitable<
+      MarketSnapshot | undefined
+    >;
 
   save(
     snapshot: MarketSnapshot,
-  ): MarketSnapshot;
+  ):
+    Awaitable<MarketSnapshot>;
 
   saveMany(
     snapshots: MarketSnapshot[],
-  ): MarketSnapshot[];
+  ):
+    Awaitable<MarketSnapshot[]>;
 }

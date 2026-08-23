@@ -20,12 +20,12 @@ export class RecommendationVerificationService {
       MarketSnapshotRepository,
   ) {}
 
-  verify(
+  async verify(
     recommendation:
       RecommendationRecord,
-  ): RecommendationRecord {
+  ): Promise<RecommendationRecord> {
     const snapshots =
-      this.getEvaluationWindowSnapshots(
+      await this.getEvaluationWindowSnapshots(
         recommendation,
       );
 
@@ -69,10 +69,10 @@ export class RecommendationVerificationService {
     };
   }
 
-  private getEvaluationWindowSnapshots(
+  private async getEvaluationWindowSnapshots(
     recommendation:
       RecommendationRecord,
-  ): MarketSnapshot[] {
+  ): Promise<MarketSnapshot[]> {
     const windowStart =
       parseDateStart(
         recommendation.publishedAt,
@@ -83,10 +83,12 @@ export class RecommendationVerificationService {
         recommendation.evaluationDate,
       );
 
-    return this.repository
-      .getBySymbol(
+    const snapshots =
+      await this.repository.getBySymbol(
         recommendation.symbol,
-      )
+      );
+
+    return snapshots
       .filter(
         (snapshot) => {
           const capturedAt =

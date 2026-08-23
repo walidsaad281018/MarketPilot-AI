@@ -55,7 +55,9 @@ export async function generateMetadata({
   const { recommendationId } = await params;
 
   const recommendation =
-    recommendationHistoryService.getRecommendation(recommendationId);
+    await recommendationHistoryService.getRecommendation(
+      recommendationId,
+    );
 
   if (!recommendation) {
     return {
@@ -78,7 +80,9 @@ export default async function RecommendationDetailsPage({
   const query = await searchParams;
 
   const recommendation =
-    recommendationHistoryService.getRecommendation(recommendationId);
+    await recommendationHistoryService.getRecommendation(
+      recommendationId,
+    );
 
   if (!recommendation) {
     notFound();

@@ -223,7 +223,7 @@ export async function GET(
   };
 
   const result =
-    recommendationService.queryRecommendations(
+    await recommendationService.queryRecommendations(
       query,
     );
 

@@ -1,49 +1,70 @@
 ﻿import type {
   RecommendationRecord,
 } from "@/data/recommendations";
+import type {
+  Awaitable,
+} from "@/lib/types/awaitable";
 
 export type RecommendationCategory =
   RecommendationRecord["category"];
 
 export interface RecommendationDataSource {
-  getAll(): RecommendationRecord[];
+  getAll():
+    Awaitable<RecommendationRecord[]>;
 
   getById(
     recommendationId: string,
-  ): RecommendationRecord | undefined;
+  ):
+    Awaitable<
+      RecommendationRecord | undefined
+    >;
 
   getBySymbol(
     symbol: string,
-  ): RecommendationRecord[];
+  ):
+    Awaitable<RecommendationRecord[]>;
 
   getByCategory(
     category: RecommendationCategory,
-  ): RecommendationRecord[];
+  ):
+    Awaitable<RecommendationRecord[]>;
 
-  getPending(): RecommendationRecord[];
+  getPending():
+    Awaitable<RecommendationRecord[]>;
 
-  getSuccessful(): RecommendationRecord[];
+  getSuccessful():
+    Awaitable<RecommendationRecord[]>;
 
-  getUnsuccessful(): RecommendationRecord[];
+  getUnsuccessful():
+    Awaitable<RecommendationRecord[]>;
 
-  getSuccessRate(): number;
+  getSuccessRate():
+    Awaitable<number>;
 }
 
 export interface RecommendationWriteDataSource
   extends RecommendationDataSource {
   save(
-    recommendation: RecommendationRecord,
-  ): RecommendationRecord;
+    recommendation:
+      RecommendationRecord,
+  ):
+    Awaitable<RecommendationRecord>;
 
   saveMany(
-    recommendations: RecommendationRecord[],
-  ): RecommendationRecord[];
+    recommendations:
+      RecommendationRecord[],
+  ):
+    Awaitable<RecommendationRecord[]>;
 
   update(
-    recommendation: RecommendationRecord,
-  ): RecommendationRecord;
+    recommendation:
+      RecommendationRecord,
+  ):
+    Awaitable<RecommendationRecord>;
 
   updateMany(
-    recommendations: RecommendationRecord[],
-  ): RecommendationRecord[];
+    recommendations:
+      RecommendationRecord[],
+  ):
+    Awaitable<RecommendationRecord[]>;
 }

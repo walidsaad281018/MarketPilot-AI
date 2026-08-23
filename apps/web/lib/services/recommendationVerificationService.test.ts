@@ -151,7 +151,7 @@ describe(
   () => {
     it(
       "returns the recommendation unchanged when no eligible snapshot exists",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -166,7 +166,7 @@ describe(
           );
 
         expect(
-          service.verify(
+          await service.verify(
             recommendation,
           ),
         ).toEqual(
@@ -177,7 +177,7 @@ describe(
 
     it(
       "marks the recommendation successful when the target is reached",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -191,7 +191,7 @@ describe(
           );
 
         expect(
-          service.verify(
+          await service.verify(
             recommendation,
           ),
         ).toEqual({
@@ -208,7 +208,7 @@ describe(
 
     it(
       "marks the recommendation unsuccessful when the target is never reached",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -222,7 +222,7 @@ describe(
           );
 
         const result =
-          service.verify(
+          await service.verify(
             recommendation,
           );
 
@@ -248,7 +248,7 @@ describe(
 
     it(
       "remembers a target hit earlier in the evaluation window",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -271,7 +271,7 @@ describe(
           );
 
         const result =
-          service.verify(
+          await service.verify(
             recommendation,
           );
 
@@ -297,7 +297,7 @@ describe(
 
     it(
       "ignores snapshots captured after the evaluation date",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -320,7 +320,7 @@ describe(
           );
 
         const result =
-          service.verify(
+          await service.verify(
             recommendation,
           );
 
@@ -338,7 +338,7 @@ describe(
 
     it(
       "ignores snapshots captured before publication",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -361,7 +361,7 @@ describe(
           );
 
         const result =
-          service.verify(
+          await service.verify(
             recommendation,
           );
 
@@ -377,7 +377,7 @@ describe(
 
     it(
       "selects the latest eligible snapshot regardless of repository order",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -399,17 +399,20 @@ describe(
             ]),
           );
 
-        expect(
-          service.verify(
+        const result =
+          await service.verify(
             recommendation,
-          ).evaluationPrice,
+          );
+
+        expect(
+          result.evaluationPrice,
         ).toBe(104);
       },
     );
 
     it(
       "does not mutate the original recommendation",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -424,7 +427,7 @@ describe(
             ]),
           );
 
-        service.verify(
+        await service.verify(
           recommendation,
         );
 

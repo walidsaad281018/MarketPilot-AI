@@ -26,16 +26,17 @@ if (!databasePath) {
 const recommendationId =
   "MP-PERSISTENCE-0001";
 
-const application =
-  createApplicationComposition({
-    databasePath,
-    seedDatabase: false,
-  });
+async function main() {
+  const application =
+    createApplicationComposition({
+      databasePath,
+      seedDatabase: false,
+    });
 
-try {
+  try {
   if (operation === "write") {
     const result =
-      application
+      await application
         .recommendationPublisher
         .publish([
           {
@@ -68,7 +69,7 @@ try {
     );
   } else {
     const recommendation =
-      application
+      await application
         .recommendationService
         .getRecommendation(
           recommendationId,
@@ -86,5 +87,13 @@ try {
     );
   }
 } finally {
-  application.close();
+    application.close();
+  }
 }
+
+main().catch(
+  (error) => {
+    console.error(error);
+    process.exitCode = 1;
+  },
+);

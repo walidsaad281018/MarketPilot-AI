@@ -139,7 +139,7 @@ describe(
   () => {
     it(
       "returns an empty result for an empty quote batch",
-      () => {
+      async () => {
         const repository =
           new RecordingMarketSnapshotRepository();
 
@@ -149,7 +149,7 @@ describe(
           });
 
         expect(
-          service.capture({
+          await service.capture({
             quotes: [],
           }),
         ).toEqual({
@@ -165,7 +165,7 @@ describe(
 
     it(
       "builds and persists snapshots",
-      () => {
+      async () => {
         const repository =
           new RecordingMarketSnapshotRepository();
 
@@ -175,7 +175,7 @@ describe(
           });
 
         const result =
-          service.capture({
+          await service.capture({
             quotes: [
               createQuote(),
               createQuote({
@@ -213,7 +213,7 @@ describe(
 
     it(
       "uses the same capture timestamp for the complete batch",
-      () => {
+      async () => {
         const repository =
           new RecordingMarketSnapshotRepository();
 
@@ -223,7 +223,7 @@ describe(
           });
 
         const result =
-          service.capture({
+          await service.capture({
             quotes: [
               createQuote(),
               createQuote({
@@ -253,7 +253,7 @@ describe(
 
     it(
       "rejects duplicate quote keys before saving",
-      () => {
+      async () => {
         const repository =
           new RecordingMarketSnapshotRepository();
 
@@ -262,7 +262,7 @@ describe(
             repository,
           });
 
-        expect(() =>
+        await expect(
           service.capture({
             quotes: [
               createQuote(),
@@ -271,7 +271,7 @@ describe(
               }),
             ],
           }),
-        ).toThrow(
+        ).rejects.toThrow(
           "Duplicate market quote in snapshot capture batch: btc.",
         );
 

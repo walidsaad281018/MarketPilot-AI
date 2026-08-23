@@ -62,7 +62,7 @@ describe(
   () => {
     it(
       "returns an empty result when no pending recommendations exist",
-      () => {
+      async () => {
         const repository =
           new RecommendationRepository(
             [],
@@ -81,7 +81,7 @@ describe(
           });
 
         expect(
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-09T12:00:00.000Z",
@@ -103,7 +103,7 @@ describe(
 
     it(
       "does not verify a recommendation before its evaluation date is complete",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -125,7 +125,7 @@ describe(
           });
 
         const result =
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-08T12:00:00.000Z",
@@ -148,7 +148,7 @@ describe(
 
     it(
       "verifies and persists an eligible pending recommendation",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -178,7 +178,7 @@ describe(
           });
 
         const result =
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-09T00:00:00.000Z",
@@ -207,7 +207,7 @@ describe(
 
     it(
       "keeps an eligible recommendation pending when verification has no snapshot outcome",
-      () => {
+      async () => {
         const recommendation =
           createRecommendation();
 
@@ -232,7 +232,7 @@ describe(
           });
 
         const result =
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-09T00:00:00.000Z",
@@ -257,7 +257,7 @@ describe(
 
     it(
       "verifies multiple eligible recommendations in one repository update batch",
-      () => {
+      async () => {
         const first =
           createRecommendation();
 
@@ -306,7 +306,7 @@ describe(
           });
 
         const result =
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-09T00:00:00.000Z",
@@ -330,7 +330,7 @@ describe(
 
     it(
       "ignores recommendations that are already completed",
-      () => {
+      async () => {
         const completed =
           createRecommendation({
             evaluationPrice: 110,
@@ -358,7 +358,7 @@ describe(
           });
 
         const result =
-          service.verifyPending({
+          await service.verifyPending({
             currentDate:
               new Date(
                 "2026-08-09T00:00:00.000Z",
@@ -377,7 +377,7 @@ describe(
 
     it(
       "rejects an invalid current date",
-      () => {
+      async () => {
         const repository =
           new RecommendationRepository(
             [],
@@ -395,14 +395,14 @@ describe(
               verificationService as never,
           });
 
-        expect(() =>
+        await expect(
           service.verifyPending({
             currentDate:
               new Date(
                 "invalid",
               ),
           }),
-        ).toThrow(
+        ).rejects.toThrow(
           "Current verification date must be valid.",
         );
       },

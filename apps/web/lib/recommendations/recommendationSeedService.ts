@@ -9,12 +9,15 @@ import type {
 export type SeedRecommendationsResult = {
   seeded: boolean;
   seededCount: number;
-  seededRecords: RecommendationRecord[];
+  seededRecords:
+    RecommendationRecord[];
 };
 
 export type RecommendationSeedServiceDependencies = {
-  repository: RecommendationWriteDataSource;
-  seedRecords?: RecommendationRecord[];
+  repository:
+    RecommendationWriteDataSource;
+  seedRecords?:
+    RecommendationRecord[];
 };
 
 export class RecommendationSeedService {
@@ -26,20 +29,26 @@ export class RecommendationSeedService {
 
   constructor({
     repository,
-    seedRecords = recommendationRecords,
+    seedRecords =
+      recommendationRecords,
   }: RecommendationSeedServiceDependencies) {
-    this.repository = repository;
+    this.repository =
+      repository;
+
     this.seedRecords =
       seedRecords.map(
         cloneRecommendation,
       );
   }
 
-  seedIfEmpty(): SeedRecommendationsResult {
+  async seedIfEmpty():
+    Promise<SeedRecommendationsResult> {
     const existingRecords =
-      this.repository.getAll();
+      await this.repository.getAll();
 
-    if (existingRecords.length > 0) {
+    if (
+      existingRecords.length > 0
+    ) {
       return {
         seeded: false,
         seededCount: 0,
@@ -47,7 +56,10 @@ export class RecommendationSeedService {
       };
     }
 
-    if (this.seedRecords.length === 0) {
+    if (
+      this.seedRecords.length ===
+      0
+    ) {
       return {
         seeded: false,
         seededCount: 0,
@@ -56,7 +68,7 @@ export class RecommendationSeedService {
     }
 
     const seededRecords =
-      this.repository.saveMany(
+      await this.repository.saveMany(
         this.seedRecords,
       );
 

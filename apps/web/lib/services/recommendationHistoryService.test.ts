@@ -167,9 +167,9 @@ describe(
 
     it(
       "returns all recommendations from the data source",
-      () => {
+      async () => {
         const result =
-          service.getAllRecommendations();
+          await service.getAllRecommendations();
 
         expect(result).toEqual(
           recommendationRecords,
@@ -183,9 +183,9 @@ describe(
 
     it(
       "returns a recommendation by ID",
-      () => {
+      async () => {
         const result =
-          service.getRecommendation(
+          await service.getRecommendation(
             "MP-TEST-0001",
           );
 
@@ -203,9 +203,9 @@ describe(
 
     it(
       "decodes a URL-encoded recommendation ID",
-      () => {
+      async () => {
         const result =
-          service.getRecommendation(
+          await service.getRecommendation(
             "MP%20TEST%200003",
           );
 
@@ -223,8 +223,8 @@ describe(
 
     it(
       "preserves an invalid URL-encoded recommendation ID",
-      () => {
-        service.getRecommendation(
+      async () => {
+        await service.getRecommendation(
           "%E0%A4%A",
         );
 
@@ -238,9 +238,9 @@ describe(
 
     it(
       "returns recommendations by symbol",
-      () => {
+      async () => {
         const result =
-          service.getRecommendationsBySymbol(
+          await service.getRecommendationsBySymbol(
             "BTC",
           );
 
@@ -258,9 +258,9 @@ describe(
 
     it(
       "returns recommendations by category",
-      () => {
+      async () => {
         const result =
-          service.getRecommendationsByCategory(
+          await service.getRecommendationsByCategory(
             "Crypto",
           );
 
@@ -280,9 +280,9 @@ describe(
 
     it(
       "returns pending recommendations",
-      () => {
+      async () => {
         const result =
-          service.getPendingRecommendations();
+          await service.getPendingRecommendations();
 
         expect(result).toEqual([
           recommendationRecords[2],
@@ -296,9 +296,9 @@ describe(
 
     it(
       "returns successful recommendations",
-      () => {
+      async () => {
         const result =
-          service.getSuccessfulRecommendations();
+          await service.getSuccessfulRecommendations();
 
         expect(result).toEqual([
           recommendationRecords[0],
@@ -313,9 +313,9 @@ describe(
 
     it(
       "returns unsuccessful recommendations",
-      () => {
+      async () => {
         const result =
-          service.getUnsuccessfulRecommendations();
+          await service.getUnsuccessfulRecommendations();
 
         expect(result).toEqual([
           recommendationRecords[1],
@@ -329,9 +329,9 @@ describe(
 
     it(
       "returns the success rate from the data source",
-      () => {
+      async () => {
         const result =
-          service.getSuccessRate();
+          await service.getSuccessRate();
 
         expect(result).toBe(67);
 
@@ -343,9 +343,9 @@ describe(
 
     it(
       "returns all records when no filters are provided",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations(
+          await service.getFilteredRecommendations(
             {},
           );
 
@@ -357,9 +357,9 @@ describe(
 
     it(
       "filters recommendations by category",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             category: "Crypto",
           });
 
@@ -373,9 +373,9 @@ describe(
 
     it(
       "filters recommendations by symbol case-insensitively",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             symbol: " btc ",
           });
 
@@ -387,9 +387,9 @@ describe(
 
     it(
       "filters recommendations by status",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             status: "Successful",
           });
 
@@ -402,9 +402,9 @@ describe(
 
     it(
       "combines category and status filters",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             category: "Crypto",
             status: "Successful",
           });
@@ -418,9 +418,9 @@ describe(
 
     it(
       "combines category, symbol, and status filters",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             category: "Crypto",
             symbol: "ETH",
             status: "Successful",
@@ -434,9 +434,9 @@ describe(
 
     it(
       "returns an empty array when filters do not match",
-      () => {
+      async () => {
         const result =
-          service.getFilteredRecommendations({
+          await service.getFilteredRecommendations({
             category: "ETF",
             symbol: "BTC",
           });
@@ -447,9 +447,9 @@ describe(
 
     it(
       "calculates the performance summary from all records",
-      () => {
+      async () => {
         const result =
-          service.getPerformanceSummary();
+          await service.getPerformanceSummary();
 
         expect(result).toEqual(
           calculateRecommendationPerformance(

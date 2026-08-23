@@ -38,11 +38,11 @@ export class MarketSnapshotCaptureService {
       repository;
   }
 
-  capture({
+  async capture({
     quotes,
     capturedAt = new Date(),
   }: CaptureMarketSnapshotsOptions):
-    CaptureMarketSnapshotsResult {
+    Promise<CaptureMarketSnapshotsResult> {
     if (
       quotes.length === 0
     ) {
@@ -66,7 +66,7 @@ export class MarketSnapshotCaptureService {
       );
 
     const capturedSnapshots =
-      this.repository.saveMany(
+      await this.repository.saveMany(
         snapshots,
       );
 

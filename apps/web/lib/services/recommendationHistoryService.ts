@@ -34,73 +34,88 @@ export class RecommendationHistoryService {
       recommendationRepository,
   ) {}
 
-  getAllRecommendations(): RecommendationRecord[] {
-    return this.dataSource.getAll();
+  async getAllRecommendations():
+    Promise<RecommendationRecord[]> {
+    return await this.dataSource.getAll();
   }
 
-  getRecommendation(
+  async getRecommendation(
     recommendationId: string,
-  ): RecommendationRecord | undefined {
-    return this.dataSource.getById(
+  ): Promise<RecommendationRecord | undefined> {
+    return await this.dataSource.getById(
       decodeRecommendationId(
         recommendationId,
       ),
     );
   }
 
-  getRecommendationsBySymbol(
+  async getRecommendationsBySymbol(
     symbol: string,
-  ): RecommendationRecord[] {
-    return this.dataSource.getBySymbol(
+  ): Promise<RecommendationRecord[]> {
+    return await this.dataSource.getBySymbol(
       symbol,
     );
   }
 
-  getRecommendationsByCategory(
+  async getRecommendationsByCategory(
     category: RecommendationCategory,
-  ): RecommendationRecord[] {
-    return this.dataSource.getByCategory(
+  ): Promise<RecommendationRecord[]> {
+    return await this.dataSource.getByCategory(
       category,
     );
   }
 
-  getPendingRecommendations(): RecommendationRecord[] {
-    return this.dataSource.getPending();
+  async getPendingRecommendations():
+    Promise<RecommendationRecord[]> {
+    return await this.dataSource.getPending();
   }
 
-  getSuccessfulRecommendations(): RecommendationRecord[] {
-    return this.dataSource.getSuccessful();
+  async getSuccessfulRecommendations():
+    Promise<RecommendationRecord[]> {
+    return await this.dataSource.getSuccessful();
   }
 
-  getUnsuccessfulRecommendations(): RecommendationRecord[] {
-    return this.dataSource.getUnsuccessful();
+  async getUnsuccessfulRecommendations():
+    Promise<RecommendationRecord[]> {
+    return await this.dataSource.getUnsuccessful();
   }
 
-  getSuccessRate(): number {
-    return this.dataSource.getSuccessRate();
+  async getSuccessRate():
+    Promise<number> {
+    return await this.dataSource.getSuccessRate();
   }
 
-  getFilteredRecommendations(
+  async getFilteredRecommendations(
     filters: RecommendationHistoryFilters,
-  ): RecommendationRecord[] {
+  ): Promise<RecommendationRecord[]> {
+    const records =
+      await this.dataSource.getAll();
+
     return recommendationQueryEngine.filter(
-      this.dataSource.getAll(),
+      records,
       filters,
     );
   }
 
-  queryRecommendations(
+  async queryRecommendations(
     options: RecommendationQueryOptions = {},
-  ): RecommendationQueryResult {
+  ): Promise<RecommendationQueryResult> {
+    const records =
+      await this.dataSource.getAll();
+
     return recommendationQueryEngine.query(
-      this.dataSource.getAll(),
+      records,
       options,
     );
   }
 
-  getPerformanceSummary(): RecommendationPerformanceSummary {
+  async getPerformanceSummary():
+    Promise<RecommendationPerformanceSummary> {
+    const records =
+      await this.dataSource.getAll();
+
     return calculateRecommendationPerformance(
-      this.dataSource.getAll(),
+      records,
     );
   }
 }

@@ -73,7 +73,7 @@ export type ApplicationComposition = {
     LiveCryptoRecommendationPublicationService;
 
   seedResult:
-    SeedRecommendationsResult | null;
+    Promise<SeedRecommendationsResult> | null;
 
   close: () => void;
 };

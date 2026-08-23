@@ -65,7 +65,7 @@ describe(
   () => {
     it(
       "seeds an empty SQLite repository",
-      () => {
+      async () => {
         const { repository } =
           createTestRepository();
 
@@ -82,7 +82,7 @@ describe(
           });
 
         const result =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         expect(result.seeded).toBe(
           true,
@@ -104,7 +104,7 @@ describe(
 
     it(
       "does not seed a SQLite repository that already contains records",
-      () => {
+      async () => {
         const { repository } =
           createTestRepository();
 
@@ -126,7 +126,7 @@ describe(
           });
 
         const result =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         expect(result).toEqual({
           seeded: false,
@@ -144,7 +144,7 @@ describe(
 
     it(
       "does nothing when the seed collection is empty",
-      () => {
+      async () => {
         const { repository } =
           createTestRepository();
 
@@ -155,7 +155,7 @@ describe(
           });
 
         const result =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         expect(result).toEqual({
           seeded: false,
@@ -171,7 +171,7 @@ describe(
 
     it(
       "is idempotent when called more than once",
-      () => {
+      async () => {
         const { repository } =
           createTestRepository();
 
@@ -188,10 +188,10 @@ describe(
           });
 
         const firstResult =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         const secondResult =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         expect(firstResult.seeded).toBe(
           true,
@@ -215,7 +215,7 @@ describe(
 
     it(
       "protects its internal seed collection from later array mutation",
-      () => {
+      async () => {
         const { repository } =
           createTestRepository();
 
@@ -236,7 +236,7 @@ describe(
         seedRecords.length = 0;
 
         const result =
-          service.seedIfEmpty();
+          await service.seedIfEmpty();
 
         expect(result.seeded).toBe(
           true,

@@ -16,9 +16,10 @@ const statusStyles: Record<
     "bg-amber-100 text-amber-700",
 };
 
-export default function PerformanceCenter() {
+export default async function PerformanceCenter() {
   const recommendationRecords =
-    recommendationHistoryService.getAllRecommendations();
+    await recommendationHistoryService
+      .getAllRecommendations();
 
   const metrics =
     calculateRecommendationPerformance(

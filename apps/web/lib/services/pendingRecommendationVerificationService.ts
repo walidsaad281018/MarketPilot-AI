@@ -49,16 +49,16 @@ export class PendingRecommendationVerificationService {
       verificationService;
   }
 
-  verifyPending({
+  async verifyPending({
     currentDate = new Date(),
   }: VerifyPendingRecommendationsOptions = {}):
-    VerifyPendingRecommendationsResult {
+    Promise<VerifyPendingRecommendationsResult> {
     validateCurrentDate(
       currentDate,
     );
 
     const pendingRecords =
-      this.repository.getPending();
+      await this.repository.getPending();
 
     const eligibleRecords =
       pendingRecords.filter(
@@ -69,22 +69,25 @@ export class PendingRecommendationVerificationService {
           ),
       );
 
-    const verifiedRecords =
-      eligibleRecords
-        .map(
+    const verificationResults =
+      await Promise.all(
+        eligibleRecords.map(
           (recommendation) =>
             this.verificationService.verify(
               recommendation,
             ),
-        )
-        .filter(
-          hasCompletedVerification,
-        );
+        ),
+      );
+
+    const verifiedRecords =
+      verificationResults.filter(
+        hasCompletedVerification,
+      );
 
     const persistedRecords =
       verifiedRecords.length === 0
         ? []
-        : this.repository.updateMany(
+        : await this.repository.updateMany(
             verifiedRecords,
           );
 

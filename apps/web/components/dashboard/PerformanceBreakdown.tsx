@@ -2,9 +2,10 @@
 import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
 import { calculateAllCategoryPerformance } from "@/lib/services/recommendationPerformanceService";
 
-export default function PerformanceBreakdown() {
+export default async function PerformanceBreakdown() {
   const recommendationRecords =
-    recommendationHistoryService.getAllRecommendations();
+    await recommendationHistoryService
+      .getAllRecommendations();
 
   const categoryPerformance =
     calculateAllCategoryPerformance(

@@ -121,7 +121,7 @@ export class LiveCryptoRecommendationPublicationService {
       ),
     );
 
-    this.pendingVerificationService
+    await this.pendingVerificationService
       ?.verifyPending();
 
     return this.publisher.publish(
@@ -157,7 +157,7 @@ export class LiveCryptoRecommendationPublicationService {
       ),
     );
 
-    this.snapshotCaptureService.capture({
+    await this.snapshotCaptureService.capture({
       quotes,
       capturedAt:
         new Date(),

@@ -2,7 +2,9 @@
   RecommendationRecord,
   RecommendationSourceRecord,
 } from "@/data/recommendations";
-import { verifyRecommendation } from "@/lib/recommendationVerification";
+import {
+  verifyRecommendation,
+} from "@/lib/recommendationVerification";
 import type {
   RecommendationWriteDataSource,
 } from "@/lib/recommendations/recommendationDataSource";
@@ -11,12 +13,14 @@ import {
 } from "@/lib/recommendations/recommendationRepository";
 
 export type PublishRecommendationsResult = {
-  publishedRecords: RecommendationRecord[];
+  publishedRecords:
+    RecommendationRecord[];
   publishedCount: number;
 };
 
 type RecommendationPublisherDependencies = {
-  repository?: RecommendationWriteDataSource;
+  repository?:
+    RecommendationWriteDataSource;
 };
 
 export class RecommendationPublisher {
@@ -24,15 +28,20 @@ export class RecommendationPublisher {
     RecommendationWriteDataSource;
 
   constructor({
-    repository = recommendationRepository,
+    repository =
+      recommendationRepository,
   }: RecommendationPublisherDependencies = {}) {
-    this.repository = repository;
+    this.repository =
+      repository;
   }
 
-  publish(
-    candidates: RecommendationSourceRecord[],
-  ): PublishRecommendationsResult {
-    if (candidates.length === 0) {
+  async publish(
+    candidates:
+      RecommendationSourceRecord[],
+  ): Promise<PublishRecommendationsResult> {
+    if (
+      candidates.length === 0
+    ) {
       return {
         publishedRecords: [],
         publishedCount: 0,
@@ -40,7 +49,7 @@ export class RecommendationPublisher {
     }
 
     const existingRecords =
-      this.repository.getAll();
+      await this.repository.getAll();
 
     validateCandidateBatch(
       candidates,
@@ -53,7 +62,7 @@ export class RecommendationPublisher {
       );
 
     const publishedRecords =
-      this.repository.saveMany(
+      await this.repository.saveMany(
         recordsToPublish,
       );
 
@@ -66,8 +75,10 @@ export class RecommendationPublisher {
 }
 
 function validateCandidateBatch(
-  candidates: RecommendationSourceRecord[],
-  existingRecords: RecommendationRecord[],
+  candidates:
+    RecommendationSourceRecord[],
+  existingRecords:
+    RecommendationRecord[],
 ): void {
   const candidateIds =
     new Set<string>();
@@ -92,8 +103,13 @@ function validateCandidateBatch(
       ),
     );
 
-  for (const candidate of candidates) {
-    validateCandidate(candidate);
+  for (
+    const candidate
+    of candidates
+  ) {
+    validateCandidate(
+      candidate,
+    );
 
     const normalizedId =
       normalizeIdentifier(
@@ -156,7 +172,8 @@ function validateCandidateBatch(
 }
 
 function validateCandidate(
-  candidate: RecommendationSourceRecord,
+  candidate:
+    RecommendationSourceRecord,
 ): void {
   validateRequiredText(
     candidate.id,
@@ -194,7 +211,8 @@ function validateCandidate(
     );
 
   if (
-    evaluationDate <= publishedAt
+    evaluationDate <=
+    publishedAt
   ) {
     throw new Error(
       `Evaluation date must be later than publication date for ${candidate.id}.`,
@@ -207,7 +225,8 @@ function validateCandidate(
   );
 
   if (
-    candidate.evaluationPrice !== null
+    candidate.evaluationPrice !==
+    null
   ) {
     validatePositiveNumber(
       candidate.evaluationPrice,
@@ -232,7 +251,8 @@ function validateCandidate(
 }
 
 function convertToRecommendationRecord(
-  sourceRecord: RecommendationSourceRecord,
+  sourceRecord:
+    RecommendationSourceRecord,
 ): RecommendationRecord {
   const verification =
     verifyRecommendation({
@@ -251,7 +271,8 @@ function convertToRecommendationRecord(
 }
 
 function createPublicationKey(
-  record: RecommendationSourceRecord,
+  record:
+    RecommendationSourceRecord,
 ): string {
   return [
     record.category,
@@ -275,7 +296,8 @@ function validateRequiredText(
   fieldName: string,
 ): void {
   if (
-    value.trim().length === 0
+    value.trim().length ===
+    0
   ) {
     throw new Error(
       `${fieldName} is required.`,
@@ -335,7 +357,9 @@ function validateIsoDate(
     /^\d{4}-\d{2}-\d{2}$/;
 
   if (
-    !isoDatePattern.test(value)
+    !isoDatePattern.test(
+      value,
+    )
   ) {
     throw new Error(
       `${fieldName} must use YYYY-MM-DD format.`,
@@ -343,7 +367,9 @@ function validateIsoDate(
   }
 
   const parsedDate =
-    parseIsoDate(value);
+    parseIsoDate(
+      value,
+    );
 
   if (
     Number.isNaN(
@@ -361,7 +387,8 @@ function validateIsoDate(
       .slice(0, 10);
 
   if (
-    normalizedDate !== value
+    normalizedDate !==
+    value
   ) {
     throw new Error(
       `${fieldName} is invalid.`,

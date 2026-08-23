@@ -32,28 +32,30 @@ export class RecommendationService {
       historyService;
   }
 
-  getRecommendations(
+  async getRecommendations(
     filters: RecommendationFilters = {},
-  ): RecommendationRecord[] {
-    return this.historyService
+  ): Promise<RecommendationRecord[]> {
+    return await this.historyService
       .getFilteredRecommendations(
         filters,
       );
   }
 
-  queryRecommendations(
+  async queryRecommendations(
     options: RecommendationQuery = {},
-  ): RecommendationQueryResult {
-    return this.historyService
+  ): Promise<RecommendationQueryResult> {
+    return await this.historyService
       .queryRecommendations(
         options,
       );
   }
 
-  getRecommendation(
+  async getRecommendation(
     id: string,
-  ): RecommendationRecord | undefined {
-    return this.historyService
+  ): Promise<
+    RecommendationRecord | undefined
+  > {
+    return await this.historyService
       .getRecommendation(
         id,
       );
