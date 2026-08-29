@@ -2,6 +2,13 @@
   resolveMarketPilotDatabasePath,
 } from "@/lib/database/databasePaths";
 import {
+  createPostgresClient,
+  type PostgresEnvironment,
+} from "@/lib/database/postgres/postgresClient";
+import {
+  PostgresMarketSnapshotRepository,
+} from "@/lib/database/postgres/postgresMarketSnapshotRepository";
+import {
   openSqliteDatabase,
 } from "@/lib/database/sqliteDatabaseFactory";
 import {
@@ -33,4 +40,26 @@ export function createSqliteMarketSnapshotRepository({
 
     throw error;
   }
+}
+
+
+export type CreatePostgresMarketSnapshotRepositoryOptions = {
+  databaseUrl?: string;
+  environment?: PostgresEnvironment;
+};
+
+export function createPostgresMarketSnapshotRepository({
+  databaseUrl,
+  environment,
+}: CreatePostgresMarketSnapshotRepositoryOptions = {}):
+  PostgresMarketSnapshotRepository {
+  const sql =
+    createPostgresClient({
+      databaseUrl,
+      environment,
+    });
+
+  return new PostgresMarketSnapshotRepository(
+    sql,
+  );
 }

@@ -2,6 +2,13 @@
   resolveMarketPilotDatabasePath,
 } from "@/lib/database/databasePaths";
 import {
+  createPostgresClient,
+  type PostgresEnvironment,
+} from "@/lib/database/postgres/postgresClient";
+import {
+  PostgresRecommendationRepository,
+} from "@/lib/database/postgres/postgresRecommendationRepository";
+import {
   openSqliteDatabase,
 } from "@/lib/database/sqliteDatabaseFactory";
 import {
@@ -33,4 +40,26 @@ export function createSqliteRecommendationRepository({
 
     throw error;
   }
+}
+
+
+export type CreatePostgresRecommendationRepositoryOptions = {
+  databaseUrl?: string;
+  environment?: PostgresEnvironment;
+};
+
+export function createPostgresRecommendationRepository({
+  databaseUrl,
+  environment,
+}: CreatePostgresRecommendationRepositoryOptions = {}):
+  PostgresRecommendationRepository {
+  const sql =
+    createPostgresClient({
+      databaseUrl,
+      environment,
+    });
+
+  return new PostgresRecommendationRepository(
+    sql,
+  );
 }

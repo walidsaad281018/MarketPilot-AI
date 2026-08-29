@@ -27,12 +27,12 @@ const openCompositions:
 const temporaryDirectories:
   string[] = [];
 
-afterEach(() => {
+afterEach(async () => {
   for (
     const composition
     of openCompositions.splice(0)
   ) {
-    composition.close();
+    await composition.close();
   }
 
   for (
@@ -191,12 +191,13 @@ describe(
         ).toBe(1);
 
         expect(
-          composition
-            .marketSnapshotRepository
-            .getLatestBySymbol(
-              "btc",
-            )
-            ?.price,
+          (
+            await composition
+              .marketSnapshotRepository
+              .getLatestBySymbol(
+                "btc",
+              )
+          )?.price,
         ).toBe(
           100_000,
         );
@@ -251,7 +252,7 @@ describe(
           firstSeedResult?.seeded,
         ).toBe(true);
 
-        firstComposition.close();
+        await firstComposition.close();
 
         const secondComposition =
           createApplicationComposition({

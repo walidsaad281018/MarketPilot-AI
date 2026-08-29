@@ -13,6 +13,15 @@ const productionGlobal =
 
 function createProductionApplication():
   ApplicationComposition {
+  if (
+    process.env.NODE_ENV === "production"
+  ) {
+    return createApplicationComposition({
+      persistence: "postgres",
+      seedDatabase: false,
+    });
+  }
+
   return createApplicationComposition();
 }
 

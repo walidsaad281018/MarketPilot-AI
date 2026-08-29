@@ -2,11 +2,12 @@
   MarketSnapshotCaptureService,
 } from "@/lib/marketSnapshots/marketSnapshotCaptureService";
 import {
+  createPostgresMarketSnapshotRepository,
   createSqliteMarketSnapshotRepository,
 } from "@/lib/marketSnapshots/marketSnapshotRepositoryFactory";
 import type {
-  SqliteMarketSnapshotRepository,
-} from "@/lib/marketSnapshots/sqliteMarketSnapshotRepository";
+  MarketSnapshotRepository,
+} from "@/lib/marketSnapshots/marketSnapshotRepository";
 import {
   cryptoProvider,
 } from "@/lib/providers/marketProvider";
@@ -17,6 +18,7 @@ import {
   RecommendationPublisher,
 } from "@/lib/recommendations/recommendationPublisher";
 import {
+  createPostgresRecommendationRepository,
   createSqliteRecommendationRepository,
 } from "@/lib/recommendations/recommendationRepositoryFactory";
 import {
@@ -24,8 +26,11 @@ import {
   type SeedRecommendationsResult,
 } from "@/lib/recommendations/recommendationSeedService";
 import type {
-  SqliteRecommendationRepository,
-} from "@/lib/recommendations/sqliteRecommendationRepository";
+  RecommendationWriteDataSource,
+} from "@/lib/recommendations/recommendationDataSource";
+import type {
+  PersistenceLifecycle,
+} from "@/lib/application/persistenceLifecycle";
 import {
   RecommendationService,
 } from "@/lib/services/api/recommendationServiceCore";
@@ -39,17 +44,25 @@ import {
   PendingRecommendationVerificationService,
 } from "@/lib/services/pendingRecommendationVerificationService";
 
+export type ApplicationPersistence =
+  | "sqlite"
+  | "postgres";
+
 export type CreateApplicationCompositionOptions = {
+  persistence?: ApplicationPersistence;
   databasePath?: string;
+  databaseUrl?: string;
   seedDatabase?: boolean;
 };
 
 export type ApplicationComposition = {
   repository:
-    SqliteRecommendationRepository;
+    RecommendationWriteDataSource &
+    PersistenceLifecycle;
 
   marketSnapshotRepository:
-    SqliteMarketSnapshotRepository;
+    MarketSnapshotRepository &
+    PersistenceLifecycle;
 
   marketSnapshotCaptureService:
     MarketSnapshotCaptureService;
@@ -75,28 +88,39 @@ export type ApplicationComposition = {
   seedResult:
     Promise<SeedRecommendationsResult> | null;
 
-  close: () => void;
+  close: () => Promise<void>;
 };
 
 export function createApplicationComposition({
+  persistence = "sqlite",
   databasePath,
+  databaseUrl,
   seedDatabase = true,
 }: CreateApplicationCompositionOptions = {}):
   ApplicationComposition {
   const repository =
-    createSqliteRecommendationRepository({
-      databasePath,
-    });
+    persistence === "postgres"
+      ? createPostgresRecommendationRepository({
+          databaseUrl,
+        })
+      : createSqliteRecommendationRepository({
+          databasePath,
+        });
 
   let marketSnapshotRepository:
-    SqliteMarketSnapshotRepository |
+    (MarketSnapshotRepository &
+      PersistenceLifecycle) |
     undefined;
 
   try {
     marketSnapshotRepository =
-      createSqliteMarketSnapshotRepository({
-        databasePath,
-      });
+      persistence === "postgres"
+        ? createPostgresMarketSnapshotRepository({
+            databaseUrl,
+          })
+        : createSqliteMarketSnapshotRepository({
+            databasePath,
+          });
 
     const seedResult =
       seedDatabase
@@ -162,9 +186,9 @@ export function createApplicationComposition({
       pendingRecommendationVerificationService,
       liveCryptoRecommendationPublicationService,
       seedResult,
-      close: () => {
-        marketSnapshotRepository?.close();
-        repository.close();
+      close: async () => {
+        await marketSnapshotRepository?.close();
+        await repository.close();
       },
     };
   } catch (error) {
