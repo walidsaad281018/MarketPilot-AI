@@ -1,0 +1,8 @@
+﻿{
+  "crons": [
+    {
+      "path": "/api/internal/run-market-cycle",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
