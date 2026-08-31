@@ -14,7 +14,10 @@ export default function Navbar() {
         <div>
           <p className="text-lg font-black tracking-tight text-slate-950">
             MarketPilot
-            <span className="text-blue-600"> AI</span>
+            <span className="text-blue-600">
+              {" "}
+              AI
+            </span>
           </p>
 
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
@@ -23,7 +26,7 @@ export default function Navbar() {
         </div>
       </Link>
 
-      <div className="hidden items-center gap-8 text-sm font-semibold text-slate-600 md:flex">
+      <div className="hidden items-center gap-7 text-sm font-semibold text-slate-600 md:flex">
         <Link
           href="/dashboard"
           className="transition hover:text-blue-600"
@@ -39,7 +42,7 @@ export default function Navbar() {
         </Link>
 
         <Link
-          href="/recommendations"
+          href="/performance"
           className="transition hover:text-blue-600"
         >
           Track Record

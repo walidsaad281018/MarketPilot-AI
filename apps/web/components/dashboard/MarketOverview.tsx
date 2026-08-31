@@ -1,3 +1,5 @@
+import type { LiveCryptoOpportunity } from "@/data/getLiveCryptoOpportunities";
+
 type LiveCryptoData = Record<
   string,
   {
@@ -8,29 +10,16 @@ type LiveCryptoData = Record<
 
 type MarketOverviewProps = {
   liveCryptoData: LiveCryptoData;
+  cryptoOpportunities: LiveCryptoOpportunity[];
 };
-
-const trackedAssets = [
-  {
-    name: "Bitcoin",
-    symbol: "BTC",
-    icon: "₿",
-  },
-  {
-    name: "Ethereum",
-    symbol: "ETH",
-    icon: "◆",
-  },
-  {
-    name: "Solana",
-    symbol: "SOL",
-    icon: "◎",
-  },
-];
 
 export default function MarketOverview({
   liveCryptoData,
+  cryptoOpportunities,
 }: MarketOverviewProps) {
+  const trackedAssets =
+    cryptoOpportunities.slice(0, 3);
+
   return (
     <section className="mb-12">
       <div className="mb-6">
@@ -43,15 +32,18 @@ export default function MarketOverview({
         </h2>
 
         <p className="mt-2 text-sm text-slate-500">
-          Live cryptocurrency prices and 24-hour market movement.
+          Current top-ranked cryptocurrency opportunities and their 24-hour market movement.
         </p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-3">
         {trackedAssets.map((asset) => {
-          const marketData = liveCryptoData[asset.symbol];
+          const marketData =
+            liveCryptoData[asset.symbol];
+
           const isNegative =
-            marketData?.change24h.startsWith("-") ?? false;
+            marketData?.change24h.startsWith("-") ??
+            false;
 
           return (
             <article
@@ -60,13 +52,13 @@ export default function MarketOverview({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl font-black text-blue-700">
-                    {asset.icon}
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-lg font-black text-blue-700">
+                    #{asset.rank}
                   </div>
 
                   <div>
                     <h3 className="font-bold text-slate-900">
-                      {asset.name}
+                      {asset.asset}
                     </h3>
 
                     <p className="text-sm font-medium text-slate-500">
@@ -76,7 +68,7 @@ export default function MarketOverview({
                 </div>
 
                 <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                  Live
+                  Score {asset.score}
                 </span>
               </div>
 
@@ -101,16 +93,6 @@ export default function MarketOverview({
                     <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       24 hours
                     </span>
-                  </div>
-
-                  <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className={
-                        isNegative
-                          ? "h-full w-2/5 rounded-full bg-red-500"
-                          : "h-full w-4/5 rounded-full bg-gradient-to-r from-blue-600 to-emerald-500"
-                      }
-                    />
                   </div>
                 </>
               ) : (

@@ -1,12 +1,11 @@
+import { cryptoMarketMap } from "@/data/cryptoMarketMap";
 import { getCryptoMarketChart } from "@/services/coingecko";
 
-const supportedCoins = new Set([
-  "bitcoin",
-  "ethereum",
-  "solana",
-]);
+const supportedCoins = new Set<string>(
+  cryptoMarketMap.map((crypto) => crypto.id),
+);
 
-const supportedPeriods = new Set([
+const supportedPeriods = new Set<number>([
   7,
   30,
 ]);
@@ -15,7 +14,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
 
   const coin =
-    url.searchParams.get("coin") ?? "bitcoin";
+    url.searchParams.get("coin") ??
+    cryptoMarketMap[0].id;
 
   const requestedDays = Number(
     url.searchParams.get("days") ?? "7",

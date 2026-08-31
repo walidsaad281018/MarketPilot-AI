@@ -46,8 +46,8 @@ export default async function PerformanceCenter() {
           </p>
         </div>
 
-        <span className="rounded-full bg-amber-100 px-4 py-2 text-xs font-bold text-amber-700">
-          Demonstration records
+        <span className="rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-700">
+          Recommendation history
         </span>
       </div>
 
@@ -129,7 +129,7 @@ export default async function PerformanceCenter() {
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        {record.symbol} Â·{" "}
+                        {record.symbol} ·{" "}
                         {record.category}
                       </p>
                     </TableCell>
@@ -179,10 +179,10 @@ export default async function PerformanceCenter() {
 
         <div className="border-t border-slate-200 bg-blue-50 px-6 py-4">
           <p className="text-xs leading-5 text-blue-700">
-            These records are demonstration data.
-            Real recommendations will be stored in
-            the database with immutable identifiers,
-            timestamps and evaluation rules.
+            Recommendation records are retained with
+            identifiers, timestamps and evaluation
+            rules so performance can be tracked
+            transparently over time.
           </p>
         </div>
       </div>
@@ -249,4 +249,3 @@ function formatDate(value: string): string {
     year: "numeric",
   }).format(new Date(`${value}T00:00:00`));
 }
-

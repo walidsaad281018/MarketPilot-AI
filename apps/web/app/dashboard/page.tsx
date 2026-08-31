@@ -1,10 +1,6 @@
 import DashboardClient from "@/components/dashboard/DashboardClient";
-import { cryptoMarketMap } from "@/data/cryptoMarketMap";
-import { getCryptoPrices } from "@/services/coingecko";
-import {
-  formatPercentage,
-  formatUsdPrice,
-} from "@/utils/formatMarketData";
+import type { LiveCryptoOpportunity } from "@/data/getLiveCryptoOpportunities";
+import { getTopCryptoOpportunities } from "@/lib/services/cryptoOpportunityService";
 
 type LiveCryptoData = Record<
   string,
@@ -14,55 +10,85 @@ type LiveCryptoData = Record<
   }
 >;
 
+type LiveCryptoOpportunityWithPrice =
+  LiveCryptoOpportunity & {
+    currentPriceUsd: number;
+  };
+
+const CRYPTO_OPPORTUNITY_LIMIT = 100;
+
 export default async function DashboardPage() {
-  let bitcoinPrice = "Unavailable";
-  let bitcoinChange24h = "0.00%";
-  let marketDataAvailable = false;
+  const liveCryptoOpportunities =
+    await getTopCryptoOpportunities(
+      CRYPTO_OPPORTUNITY_LIMIT,
+    );
 
-  const liveCryptoData: LiveCryptoData = {};
+  const liveCryptoData: LiveCryptoData =
+    Object.fromEntries(
+      liveCryptoOpportunities
+        .filter(hasCurrentPrice)
+        .map((opportunity) => [
+          opportunity.symbol,
+          {
+            currentPrice: formatCurrentPrice(
+              opportunity.currentPriceUsd,
+            ),
+            change24h: formatPriceChange(
+              opportunity.priceChange24h,
+            ),
+          },
+        ]),
+    );
 
-  try {
-    const coinIds = cryptoMarketMap.map((crypto) => crypto.id);
-    const prices = await getCryptoPrices(coinIds);
-
-    for (const crypto of cryptoMarketMap) {
-      const marketData = prices[crypto.id];
-
-      if (
-        marketData &&
-        typeof marketData.usd === "number" &&
-        typeof marketData.usd_24h_change === "number"
-      ) {
-        liveCryptoData[crypto.symbol] = {
-          currentPrice: formatUsdPrice(marketData.usd),
-          change24h: formatPercentage(
-            marketData.usd_24h_change,
-          ),
-        };
-      }
-    }
-
-    const bitcoin = liveCryptoData.BTC;
-
-    if (bitcoin) {
-      bitcoinPrice = bitcoin.currentPrice;
-      bitcoinChange24h = bitcoin.change24h;
-      marketDataAvailable = true;
-    }
-  } catch (error) {
-    console.error("Unable to load crypto market data:", error);
-  }
+  const marketDataAvailable =
+    liveCryptoOpportunities.some(
+      hasCurrentPrice,
+    );
 
   return (
     <main className="min-h-screen bg-slate-100">
       <div className="mx-auto max-w-6xl px-5 py-12">
         <DashboardClient
           liveCryptoData={liveCryptoData}
-          bitcoinPrice={bitcoinPrice}
-          bitcoinChange24h={bitcoinChange24h}
-          marketDataAvailable={marketDataAvailable}
+          cryptoOpportunities={
+            liveCryptoOpportunities
+          }
+          marketDataAvailable={
+            marketDataAvailable
+          }
         />
       </div>
     </main>
   );
+}
+
+function hasCurrentPrice(
+  opportunity: LiveCryptoOpportunity,
+): opportunity is LiveCryptoOpportunityWithPrice {
+  return opportunity.currentPriceUsd !== null;
+}
+
+function formatCurrentPrice(
+  price: number,
+): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits:
+      price >= 1 ? 2 : 4,
+    maximumFractionDigits:
+      price >= 1 ? 2 : 8,
+  }).format(price);
+}
+
+function formatPriceChange(
+  change: number | null | undefined,
+): string {
+  if (change == null) {
+    return "";
+  }
+
+  const sign = change > 0 ? "+" : "";
+
+  return `${sign}${change.toFixed(2)}%`;
 }
