@@ -1,9 +1,9 @@
-import { cryptoMarketMap } from "@/data/cryptoMarketMap";
 import { getCryptoMarketChart } from "@/services/coingecko";
 
-const supportedCoins = new Set<string>(
-  cryptoMarketMap.map((crypto) => crypto.id),
-);
+const DEFAULT_COIN_ID = "bitcoin";
+
+const COIN_ID_PATTERN =
+  /^[a-z0-9][a-z0-9-]{0,99}$/;
 
 const supportedPeriods = new Set<number>([
   7,
@@ -14,18 +14,23 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
 
   const coin =
-    url.searchParams.get("coin") ??
-    cryptoMarketMap[0].id;
+    (
+      url.searchParams.get("coin") ??
+      DEFAULT_COIN_ID
+    )
+      .trim()
+      .toLowerCase();
 
   const requestedDays = Number(
     url.searchParams.get("days") ?? "7",
   );
 
-  if (!supportedCoins.has(coin)) {
+  if (!COIN_ID_PATTERN.test(coin)) {
     return Response.json(
       {
         success: false,
-        message: "Unsupported cryptocurrency.",
+        message:
+          "Invalid cryptocurrency identifier.",
       },
       {
         status: 400,
