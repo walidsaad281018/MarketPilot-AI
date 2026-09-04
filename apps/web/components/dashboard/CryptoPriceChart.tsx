@@ -69,10 +69,21 @@ export default function CryptoPriceChart({
   );
 
   const [
-    selectedCoin,
-    setSelectedCoin,
-  ] = useState<CoinOption | null>(
-    coins[0] ?? null,
+    selectedCoinId,
+    setSelectedCoinId,
+  ] = useState<string | null>(
+    coins[0]?.id ?? null,
+  );
+
+  const selectedCoin = useMemo(
+    () =>
+      coins.find(
+        (coin) =>
+          coin.id === selectedCoinId,
+      ) ??
+      coins[0] ??
+      null,
+    [coins, selectedCoinId],
   );
 
   const [days, setDays] =
@@ -88,32 +99,7 @@ export default function CryptoPriceChart({
     useState("");
 
   useEffect(() => {
-    if (coins.length === 0) {
-      setSelectedCoin(null);
-      setPoints([]);
-      setIsLoading(false);
-      return;
-    }
-
-    setSelectedCoin((currentCoin) => {
-      if (
-        currentCoin &&
-        coins.some(
-          (coin) =>
-            coin.id === currentCoin.id,
-        )
-      ) {
-        return currentCoin;
-      }
-
-      return coins[0];
-    });
-  }, [coins]);
-
-  useEffect(() => {
     if (!selectedCoin) {
-      setPoints([]);
-      setIsLoading(false);
       return;
     }
 
@@ -363,8 +349,8 @@ export default function CryptoPriceChart({
               key={coin.id}
               type="button"
               onClick={() =>
-                setSelectedCoin(
-                  coin,
+                setSelectedCoinId(
+                  coin.id,
                 )
               }
               className={
@@ -410,7 +396,7 @@ export default function CryptoPriceChart({
                   Loading{" "}
                   {selectedCoin?.name ??
                     "market"}{" "}
-                  chart…
+                  chart...
                 </p>
               </div>
             </div>
@@ -458,9 +444,7 @@ export default function CryptoPriceChart({
                         : "rounded-full bg-emerald-100 px-4 py-2 text-sm font-bold text-emerald-700"
                     }
                   >
-                    {chart.isNegative
-                      ? "↘"
-                      : "↗"}{" "}
+                    {chart.isNegative ? "\u2198" : "\u2197"}{" "}
                     {chart.changePercentage >=
                     0
                       ? "+"

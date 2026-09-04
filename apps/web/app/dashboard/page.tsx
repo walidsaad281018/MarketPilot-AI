@@ -1,6 +1,11 @@
 import DashboardClient from "@/components/dashboard/DashboardClient";
 import type { LiveCryptoOpportunity } from "@/data/getLiveCryptoOpportunities";
 import { getTopCryptoOpportunities } from "@/lib/services/cryptoOpportunityService";
+import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
+import {
+  calculateAllCategoryPerformance,
+  calculateRecommendationPerformance,
+} from "@/lib/services/recommendationPerformanceService";
 
 type LiveCryptoData = Record<
   string,
@@ -18,9 +23,25 @@ type LiveCryptoOpportunityWithPrice =
 const CRYPTO_OPPORTUNITY_LIMIT = 100;
 
 export default async function DashboardPage() {
-  const liveCryptoOpportunities =
-    await getTopCryptoOpportunities(
+  const [
+    liveCryptoOpportunities,
+    recommendationRecords,
+  ] = await Promise.all([
+    getTopCryptoOpportunities(
       CRYPTO_OPPORTUNITY_LIMIT,
+    ),
+    recommendationHistoryService
+      .getAllRecommendations(),
+  ]);
+
+  const performanceMetrics =
+    calculateRecommendationPerformance(
+      recommendationRecords,
+    );
+
+  const categoryPerformance =
+    calculateAllCategoryPerformance(
+      recommendationRecords,
     );
 
   const liveCryptoData: LiveCryptoData =
@@ -55,6 +76,15 @@ export default async function DashboardPage() {
           }
           marketDataAvailable={
             marketDataAvailable
+          }
+          recommendationRecords={
+            recommendationRecords
+          }
+          performanceMetrics={
+            performanceMetrics
+          }
+          categoryPerformance={
+            categoryPerformance
           }
         />
       </div>

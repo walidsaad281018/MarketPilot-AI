@@ -1,8 +1,10 @@
-﻿import {
-  type RecommendationStatus,
+import type {
+  RecommendationRecord,
+  RecommendationStatus,
 } from "@/data/recommendations";
-import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
-import { calculateRecommendationPerformance } from "@/lib/services/recommendationPerformanceService";
+import type {
+  RecommendationPerformanceMetrics,
+} from "@/lib/services/recommendationPerformanceService";
 
 const statusStyles: Record<
   RecommendationStatus,
@@ -16,16 +18,15 @@ const statusStyles: Record<
     "bg-amber-100 text-amber-700",
 };
 
-export default async function PerformanceCenter() {
-  const recommendationRecords =
-    await recommendationHistoryService
-      .getAllRecommendations();
+type PerformanceCenterProps = {
+  recommendationRecords: RecommendationRecord[];
+  metrics: RecommendationPerformanceMetrics;
+};
 
-  const metrics =
-    calculateRecommendationPerformance(
-      recommendationRecords,
-    );
-
+export default function PerformanceCenter({
+  recommendationRecords,
+  metrics,
+}: PerformanceCenterProps) {
   return (
     <section className="mb-12">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
