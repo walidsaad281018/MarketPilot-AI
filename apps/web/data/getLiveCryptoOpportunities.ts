@@ -28,6 +28,7 @@ type CryptoAsset = {
 export type LiveCryptoOpportunity =
   OpportunityWithMarketMetadata & {
     currentPriceUsd: number | null;
+    coinGeckoId?: string | null;
   };
 
 export type GetLiveCryptoOpportunitiesOptions = {

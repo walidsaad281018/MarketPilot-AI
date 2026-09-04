@@ -267,12 +267,15 @@ function buildDynamicOpportunity(
       currentTime,
     });
 
-  return buildCryptoOpportunity({
-    asset: market.name,
-    symbol: market.symbol,
-    market,
-    metadata,
-  });
+  return {
+    ...buildCryptoOpportunity({
+      asset: market.name,
+      symbol: market.symbol,
+      market,
+      metadata,
+    }),
+    coinGeckoId: market.id,
+  };
 }
 
 function removeDuplicateSymbols(

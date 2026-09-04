@@ -43,28 +43,32 @@ export default function CryptoPriceChart({
   const coins = useMemo<CoinOption[]>(
     () =>
       cryptoOpportunities
+        .slice(0, 5)
         .flatMap((opportunity) => {
-          const mapping =
+          const fallbackMapping =
             cryptoMarketMap.find(
               (crypto) =>
                 crypto.symbol ===
                 opportunity.symbol,
             );
 
-          if (!mapping) {
+          const coinGeckoId =
+            opportunity.coinGeckoId ??
+            fallbackMapping?.id;
+
+          if (!coinGeckoId) {
             return [];
           }
 
           return [
             {
-              id: mapping.id,
+              id: coinGeckoId,
               name: opportunity.asset,
               symbol: opportunity.symbol,
               rank: opportunity.rank,
             },
           ];
-        })
-        .slice(0, 5),
+        }),
     [cryptoOpportunities],
   );
 
