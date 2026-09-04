@@ -10,6 +10,11 @@ import PerformanceBreakdown from "@/components/dashboard/PerformanceBreakdown";
 import PerformanceCenter from "@/components/dashboard/PerformanceCenter";
 import DashboardHero from "@/components/sections/DashboardHero";
 import type { LiveCryptoOpportunity } from "@/data/getLiveCryptoOpportunities";
+import type { RecommendationRecord } from "@/data/recommendations";
+import type {
+  CategoryPerformance,
+  RecommendationPerformanceMetrics,
+} from "@/lib/services/recommendationPerformanceService";
 
 type LiveCryptoData = Record<
   string,
@@ -23,12 +28,18 @@ type DashboardClientProps = {
   liveCryptoData: LiveCryptoData;
   cryptoOpportunities: LiveCryptoOpportunity[];
   marketDataAvailable: boolean;
+  recommendationRecords: RecommendationRecord[];
+  performanceMetrics: RecommendationPerformanceMetrics;
+  categoryPerformance: CategoryPerformance[];
 };
 
 export default function DashboardClient({
   liveCryptoData,
   cryptoOpportunities,
   marketDataAvailable,
+  recommendationRecords,
+  performanceMetrics,
+  categoryPerformance,
 }: DashboardClientProps) {
   const [
     searchQuery,
@@ -77,7 +88,7 @@ export default function DashboardClient({
             </div>
 
             <span className="text-2xl font-black text-blue-600 transition group-hover:translate-x-1">
-              →
+              {"\u2192"}
             </span>
           </div>
         </Link>
@@ -104,7 +115,7 @@ export default function DashboardClient({
             </div>
 
             <span className="text-2xl font-black text-emerald-700 transition group-hover:translate-x-1">
-              →
+              {"\u2192"}
             </span>
           </div>
         </Link>
@@ -174,9 +185,20 @@ export default function DashboardClient({
         />
       ) : null}
 
-      <PerformanceCenter />
+      <PerformanceCenter
+        recommendationRecords={
+          recommendationRecords
+        }
+        metrics={
+          performanceMetrics
+        }
+      />
 
-      <PerformanceBreakdown />
+      <PerformanceBreakdown
+        categoryPerformance={
+          categoryPerformance
+        }
+      />
 
       <OpportunityGrid
         liveCryptoData={

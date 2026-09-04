@@ -1,17 +1,15 @@
-﻿import Link from "next/link";
-import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
-import { calculateAllCategoryPerformance } from "@/lib/services/recommendationPerformanceService";
+import Link from "next/link";
+import type {
+  CategoryPerformance,
+} from "@/lib/services/recommendationPerformanceService";
 
-export default async function PerformanceBreakdown() {
-  const recommendationRecords =
-    await recommendationHistoryService
-      .getAllRecommendations();
+type PerformanceBreakdownProps = {
+  categoryPerformance: CategoryPerformance[];
+};
 
-  const categoryPerformance =
-    calculateAllCategoryPerformance(
-      recommendationRecords,
-    );
-
+export default function PerformanceBreakdown({
+  categoryPerformance,
+}: PerformanceBreakdownProps) {
   return (
     <section className="mb-12 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-5">
@@ -34,7 +32,7 @@ export default async function PerformanceBreakdown() {
           href="/performance"
           className="inline-flex rounded-xl bg-slate-900 px-5 py-3 font-bold text-white transition hover:bg-blue-600"
         >
-          Open Full Performance Center â†’
+          Open Full Performance Center {"\u2192"}
         </Link>
       </div>
 

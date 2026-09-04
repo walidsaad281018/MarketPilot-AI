@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cryptoMarketMap } from "@/data/cryptoMarketMap";
-import { getOpportunityBySymbol } from "@/data/getOpportunity";
+import { getOpportunityBySymbol } from "@/lib/services/opportunityService";
 import { getCryptoPrices } from "@/services/coingecko";
 import {
   formatPercentage,
@@ -32,7 +32,9 @@ export default async function AnalysisPage({
   const { symbol } = await params;
 
   const opportunity =
-    getOpportunityBySymbol(symbol);
+    await getOpportunityBySymbol(
+      symbol,
+    );
 
   if (!opportunity) {
     notFound();
