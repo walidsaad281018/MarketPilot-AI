@@ -11,6 +11,9 @@ import PerformanceCenter from "@/components/dashboard/PerformanceCenter";
 import DashboardHero from "@/components/sections/DashboardHero";
 import type { LiveCryptoOpportunity } from "@/data/getLiveCryptoOpportunities";
 import type { RecommendationRecord } from "@/data/recommendations";
+import {
+  analyzeOpportunity,
+} from "@/lib/services/opportunityAnalysisService";
 import type {
   CategoryPerformance,
   RecommendationPerformanceMetrics,
@@ -48,6 +51,13 @@ export default function DashboardClient({
 
   const topOpportunity =
     cryptoOpportunities[0] ?? null;
+
+  const topOpportunityAnalysis =
+    topOpportunity
+      ? analyzeOpportunity(
+          topOpportunity,
+        )
+      : null;
 
   const topOpportunityMarketData =
     topOpportunity
@@ -143,7 +153,8 @@ export default function DashboardClient({
         }
       />
 
-      {topOpportunity ? (
+      {topOpportunity &&
+      topOpportunityAnalysis ? (
         <AITopPickCard
           assetName={
             topOpportunity.asset
@@ -177,11 +188,23 @@ export default function DashboardClient({
           trend={
             topOpportunity.trend
           }
-          reasons={[
-            "Ranked first by the current MarketPilot opportunity engine.",
-            "Score reflects current market momentum, volatility and liquidity conditions.",
-            "Market quality and live-data signals support its current ranking.",
-          ]}
+          recommendation={
+            topOpportunityAnalysis.recommendation
+          }
+          recommendationSummary={
+            topOpportunityAnalysis.recommendationSummary
+          }
+          reasons={
+            [
+              ...topOpportunityAnalysis.strengths,
+              ...topOpportunityAnalysis.risks,
+            ]
+              .slice(0, 3)
+              .map(
+                (reason) =>
+                  reason.description,
+              )
+          }
         />
       ) : null}
 

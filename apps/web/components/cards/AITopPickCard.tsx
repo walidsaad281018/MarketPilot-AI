@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type {
+  RecommendationLabel,
+} from "@/lib/services/opportunityAnalysisService";
 
 type AITopPickCardProps = {
   assetName: string;
@@ -11,6 +14,8 @@ type AITopPickCardProps = {
   currentPrice: string;
   change24h: string;
   trend: "Bullish" | "Neutral" | "Bearish";
+  recommendation: RecommendationLabel;
+  recommendationSummary: string;
   reasons: string[];
 };
 
@@ -26,6 +31,15 @@ const trendStyles = {
   Bearish: "text-red-600",
 };
 
+const recommendationStyles: Record<
+  RecommendationLabel,
+  string
+> = {
+  BUY: "bg-emerald-100 text-emerald-700",
+  WATCH: "bg-amber-100 text-amber-700",
+  AVOID: "bg-red-100 text-red-700",
+};
+
 export default function AITopPickCard({
   assetName,
   symbol,
@@ -37,6 +51,8 @@ export default function AITopPickCard({
   currentPrice,
   change24h,
   trend,
+  recommendation,
+  recommendationSummary,
   reasons,
 }: AITopPickCardProps) {
   const isNegativeChange =
@@ -46,7 +62,7 @@ export default function AITopPickCard({
     <section className="mb-12 overflow-hidden rounded-3xl border border-blue-100 bg-white shadow-lg">
       <div className="bg-gradient-to-r from-blue-700 to-indigo-700 px-6 py-4 text-white">
         <p className="text-sm font-semibold uppercase tracking-[0.2em]">
-          🏆 AI Top Pick Today
+          {"\uD83C\uDFC6"} AI Top Pick Today
         </p>
       </div>
 
@@ -151,9 +167,12 @@ export default function AITopPickCard({
               <p
                 className={`mt-2 font-bold ${trendStyles[trend]}`}
               >
-                {trend === "Bullish" && "↗ "}
-                {trend === "Bearish" && "↘ "}
-                {trend === "Neutral" && "→ "}
+                {trend === "Bullish" &&
+                  "\u2197 "}
+                {trend === "Bearish" &&
+                  "\u2198 "}
+                {trend === "Neutral" &&
+                  "\u2192 "}
                 {trend}
               </p>
             </div>
@@ -161,9 +180,21 @@ export default function AITopPickCard({
         </div>
 
         <div className="rounded-2xl bg-slate-950 p-6 text-white">
-          <h3 className="text-lg font-bold">
-            Why MarketPilot selected this asset
-          </h3>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-lg font-bold">
+              MarketPilot assessment
+            </h3>
+
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-bold ${recommendationStyles[recommendation]}`}
+            >
+              {recommendation}
+            </span>
+          </div>
+
+          <p className="mt-4 text-sm leading-6 text-slate-300">
+            {recommendationSummary}
+          </p>
 
           <ul className="mt-5 space-y-4">
             {reasons.map((reason) => (
@@ -172,7 +203,7 @@ export default function AITopPickCard({
                 className="flex gap-3 text-sm text-slate-300"
               >
                 <span className="mt-0.5 text-emerald-400">
-                  ✓
+                  {"\u2713"}
                 </span>
 
                 <span>{reason}</span>
@@ -184,7 +215,8 @@ export default function AITopPickCard({
             href={`/analysis/${symbol}`}
             className="mt-7 block w-full rounded-xl bg-blue-600 px-5 py-3 text-center font-bold text-white transition hover:bg-blue-500"
           >
-            View Transparent Analysis →
+            View Transparent Analysis{" "}
+            {"\u2192"}
           </Link>
 
           <p className="mt-3 text-center text-xs text-slate-500">
