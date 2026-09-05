@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QuoteFreshnessPanel from "@/components/market/QuoteFreshnessPanel";
-import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
+import { recommendationService } from "@/lib/services/api/recommendationService";
 import type {
   RecommendationRecord,
   RecommendationStatus,
@@ -55,7 +55,7 @@ export async function generateMetadata({
   const { recommendationId } = await params;
 
   const recommendation =
-    await recommendationHistoryService.getRecommendation(
+    await recommendationService.getRecommendation(
       recommendationId,
     );
 
@@ -80,7 +80,7 @@ export default async function RecommendationDetailsPage({
   const query = await searchParams;
 
   const recommendation =
-    await recommendationHistoryService.getRecommendation(
+    await recommendationService.getRecommendation(
       recommendationId,
     );
 
