@@ -771,7 +771,7 @@ describe(
     );
 
     it(
-      "does not verify pending recommendations when no candidates exist",
+      "verifies pending recommendations even when no candidates exist",
       async () => {
         const candidateGenerator =
           vi.fn()
@@ -785,6 +785,11 @@ describe(
         };
 
         const pendingVerificationService = {
+          getPendingRecommendations:
+            vi.fn()
+              .mockReturnValue(
+                [],
+              ),
           verifyPending:
             vi.fn(),
         };
@@ -796,12 +801,126 @@ describe(
             pendingVerificationService,
           });
 
-        await service.publish();
+        const result =
+          await service.publish();
+
+        expect(
+          pendingVerificationService
+            .getPendingRecommendations,
+        ).toHaveBeenCalledOnce();
 
         expect(
           pendingVerificationService
             .verifyPending,
+        ).toHaveBeenCalledOnce();
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledWith();
+
+        expect(
+          publisher.publish,
         ).not.toHaveBeenCalled();
+
+        expect(result).toEqual({
+          publishedRecords: [],
+          publishedCount: 0,
+        });
+      },
+    );
+
+    it(
+      "captures pending-only crypto symbols before verification",
+      async () => {
+        const pendingRecommendation =
+          createPublishedRecord(
+            createCandidate({
+              id:
+                "MP-PENDING-BNB",
+              asset: "BNB",
+              symbol: "BNB",
+            }),
+          );
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue(
+              [],
+            );
+
+        const publisher = {
+          publish:
+            vi.fn(),
+        };
+
+        const bnbQuote =
+          createQuote({
+            symbol: "BNB",
+          });
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                bnbQuote,
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const pendingVerificationService = {
+          getPendingRecommendations:
+            vi.fn()
+              .mockReturnValue([
+                pendingRecommendation,
+              ]),
+          verifyPending:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).toHaveBeenCalledWith([
+          "BNB",
+        ]);
+
+        expect(
+          snapshotCaptureService.capture,
+        ).toHaveBeenCalledWith({
+          quotes: [
+            bnbQuote,
+          ],
+          capturedAt:
+            expect.any(Date),
+        });
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledWith({
+          symbols: [
+            "BNB",
+          ],
+        });
 
         expect(
           publisher.publish,
@@ -809,6 +928,223 @@ describe(
       },
     );
 
+    it(
+      "deduplicates candidate and pending symbols before snapshot capture",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const pendingRecommendation =
+          createPublishedRecord(
+            createCandidate({
+              id:
+                "MP-PENDING-BTC",
+              symbol: "btc",
+            }),
+          );
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publishedRecord =
+          createPublishedRecord(
+            candidate,
+          );
+
+        const publisher = {
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [
+                  publishedRecord,
+                ],
+                publishedCount: 1,
+              }),
+        };
+
+        const quote =
+          createQuote();
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                quote,
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const pendingVerificationService = {
+          getPendingRecommendations:
+            vi.fn()
+              .mockReturnValue([
+                pendingRecommendation,
+              ]),
+          verifyPending:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).toHaveBeenCalledWith([
+          "BTC",
+        ]);
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledWith({
+          symbols: [
+            "BTC",
+          ],
+        });
+      },
+    );
+
+    it(
+      "does not block publication when a pending-only symbol has no quote",
+      async () => {
+        const candidate =
+          createCandidate();
+
+        const pendingRecommendation =
+          createPublishedRecord(
+            createCandidate({
+              id:
+                "MP-PENDING-UNSUPPORTED",
+              asset:
+                "Unsupported Asset",
+              symbol:
+                "UNSUPPORTED",
+            }),
+          );
+
+        const candidateGenerator =
+          vi.fn()
+            .mockResolvedValue([
+              candidate,
+            ]);
+
+        const publishedRecord =
+          createPublishedRecord(
+            candidate,
+          );
+
+        const publisher = {
+          publish:
+            vi.fn()
+              .mockReturnValue({
+                publishedRecords: [
+                  publishedRecord,
+                ],
+                publishedCount: 1,
+              }),
+        };
+
+        const btcQuote =
+          createQuote();
+
+        const marketProvider = {
+          getQuotes:
+            vi.fn()
+              .mockResolvedValue([
+                btcQuote,
+              ]),
+        };
+
+        const snapshotCaptureService = {
+          capture:
+            vi.fn()
+              .mockReturnValue({
+                capturedSnapshots: [],
+                capturedCount: 1,
+              }),
+        };
+
+        const pendingVerificationService = {
+          getPendingRecommendations:
+            vi.fn()
+              .mockReturnValue([
+                pendingRecommendation,
+              ]),
+          verifyPending:
+            vi.fn(),
+        };
+
+        const service =
+          new LiveCryptoRecommendationPublicationService({
+            candidateGenerator,
+            publisher,
+            snapshotCaptureService,
+            marketProvider,
+            pendingVerificationService,
+          });
+
+        const result =
+          await service.publish();
+
+        expect(
+          marketProvider.getQuotes,
+        ).toHaveBeenCalledWith([
+          "BTC",
+          "UNSUPPORTED",
+        ]);
+
+        expect(
+          snapshotCaptureService.capture,
+        ).toHaveBeenCalledWith({
+          quotes: [
+            btcQuote,
+          ],
+          capturedAt:
+            expect.any(Date),
+        });
+
+        expect(
+          pendingVerificationService
+            .verifyPending,
+        ).toHaveBeenCalledWith({
+          symbols: [
+            "BTC",
+          ],
+        });
+
+        expect(
+          publisher.publish,
+        ).toHaveBeenCalledWith([
+          candidate,
+        ]);
+
+        expect(result).toEqual({
+          publishedRecords: [
+            publishedRecord,
+          ],
+          publishedCount: 1,
+        });
+      },
+    );
     it(
       "does not run verification when snapshot capture fails",
       async () => {

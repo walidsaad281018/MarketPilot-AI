@@ -35,10 +35,17 @@ type QuoteProvider = Pick<
   "getQuotes"
 >;
 
-type PendingVerificationService = Pick<
-  PendingRecommendationVerificationService,
-  "verifyPending"
->;
+type PendingVerificationService =
+  Pick<
+    PendingRecommendationVerificationService,
+    "verifyPending"
+  > &
+  Partial<
+    Pick<
+      PendingRecommendationVerificationService,
+      "getPendingRecommendations"
+    >
+  >;
 
 type LiveCryptoRecommendationPublicationDependencies = {
   candidateGenerator?: CandidateGenerator;
@@ -105,6 +112,54 @@ export class LiveCryptoRecommendationPublicationService {
         options,
       );
 
+    const candidateSymbols =
+      candidates.map(
+        (candidate) =>
+          candidate.symbol,
+      );
+
+    const pendingRecommendations =
+      await this.pendingVerificationService
+        ?.getPendingRecommendations?.();
+
+    const pendingCryptoSymbols =
+      pendingRecommendations
+        ?.filter(
+          (recommendation) =>
+            recommendation.category ===
+            "Crypto",
+        )
+        .map(
+          (recommendation) =>
+            recommendation.symbol,
+        ) ??
+      [];
+
+    const capturedSymbols =
+      await this.captureMarketSnapshots(
+        candidateSymbols,
+        pendingCryptoSymbols,
+      );
+
+    if (
+      this.pendingVerificationService
+    ) {
+      if (
+        pendingRecommendations ===
+          undefined ||
+        capturedSymbols === undefined
+      ) {
+        await this.pendingVerificationService
+          .verifyPending();
+      } else {
+        await this.pendingVerificationService
+          .verifyPending({
+            symbols:
+              capturedSymbols,
+          });
+      }
+    }
+
     if (
       candidates.length === 0
     ) {
@@ -114,54 +169,84 @@ export class LiveCryptoRecommendationPublicationService {
       };
     }
 
-    await this.captureMarketSnapshots(
-      candidates.map(
-        (candidate) =>
-          candidate.symbol,
-      ),
-    );
-
-    await this.pendingVerificationService
-      ?.verifyPending();
-
     return this.publisher.publish(
       candidates,
     );
   }
 
   private async captureMarketSnapshots(
-    symbols: string[],
-  ): Promise<void> {
+    candidateSymbols: string[],
+    pendingSymbols: string[],
+  ): Promise<string[] | undefined> {
     if (
       !this.snapshotCaptureService ||
       !this.marketProvider
     ) {
-      return;
+      return undefined;
     }
 
-    const uniqueSymbols =
+    const requiredSymbols =
       normalizeUniqueSymbols(
-        symbols,
+        candidateSymbols,
       );
+
+    const requiredSymbolSet =
+      new Set(
+        requiredSymbols,
+      );
+
+    const optionalSymbols =
+      normalizeUniqueSymbols(
+        pendingSymbols,
+      ).filter(
+        (symbol) =>
+          !requiredSymbolSet.has(
+            symbol,
+          ),
+      );
+
+    const requestedSymbols = [
+      ...requiredSymbols,
+      ...optionalSymbols,
+    ];
+
+    if (
+      requestedSymbols.length === 0
+    ) {
+      return [];
+    }
 
     const quotes =
       await this.marketProvider.getQuotes(
-        uniqueSymbols,
+        requestedSymbols,
+      );
+
+    const receivedSymbols =
+      normalizeUniqueSymbols(
+        quotes.map(
+          (quote) =>
+            quote.symbol,
+        ),
       );
 
     validateSnapshotQuotes(
-      uniqueSymbols,
-      quotes.map(
-        (quote) =>
-          quote.symbol,
-      ),
+      requiredSymbols,
+      receivedSymbols,
     );
+
+    if (
+      quotes.length === 0
+    ) {
+      return [];
+    }
 
     await this.snapshotCaptureService.capture({
       quotes,
       capturedAt:
         new Date(),
     });
+
+    return receivedSymbols;
   }
 }
 
@@ -210,21 +295,16 @@ function normalizeUniqueSymbols(
 }
 
 function validateSnapshotQuotes(
-  requestedSymbols: string[],
+  requiredSymbols: string[],
   receivedSymbols: string[],
 ): void {
   const receivedSymbolSet =
     new Set(
-      receivedSymbols.map(
-        (symbol) =>
-          symbol
-            .trim()
-            .toUpperCase(),
-      ),
+      receivedSymbols,
     );
 
   const missingSymbols =
-    requestedSymbols.filter(
+    requiredSymbols.filter(
       (symbol) =>
         !receivedSymbolSet.has(
           symbol,
