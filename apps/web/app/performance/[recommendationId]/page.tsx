@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import QuoteFreshnessPanel from "@/components/market/QuoteFreshnessPanel";
-import { recommendationHistoryService } from "@/lib/services/recommendationHistoryService";
+import { recommendationService } from "@/lib/services/api/recommendationService";
 import type {
   RecommendationRecord,
   RecommendationStatus,
@@ -55,7 +55,7 @@ export async function generateMetadata({
   const { recommendationId } = await params;
 
   const recommendation =
-    await recommendationHistoryService.getRecommendation(
+    await recommendationService.getRecommendation(
       recommendationId,
     );
 
@@ -80,7 +80,7 @@ export default async function RecommendationDetailsPage({
   const query = await searchParams;
 
   const recommendation =
-    await recommendationHistoryService.getRecommendation(
+    await recommendationService.getRecommendation(
       recommendationId,
     );
 
@@ -175,14 +175,14 @@ function NavigationLinks({
         href="/performance"
         className="inline-flex items-center gap-2 font-bold text-blue-600 transition hover:text-blue-800"
       >
-        â† Back to Performance Center
+        ← Back to Performance Center
       </Link>
 
       <Link
         href={`/analysis/${recommendation.symbol}`}
         className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 transition hover:border-blue-500 hover:text-blue-600"
       >
-        Open {recommendation.symbol} Analysis â†’
+        Open {recommendation.symbol} Analysis →
       </Link>
     </div>
   );
@@ -204,7 +204,7 @@ function RecommendationHeader({
           </h1>
 
           <p className="mt-3 text-slate-300">
-            {recommendation.symbol} Â·{" "}
+            {recommendation.symbol} ·{" "}
             {recommendation.category}
           </p>
 
@@ -480,7 +480,7 @@ function LivePreviewSection({
 
         {livePreview && (
           <span className="rounded-full bg-emerald-100 px-4 py-2 text-xs font-bold text-emerald-700">
-            â— Safe live verification
+            ● Safe live verification
           </span>
         )}
       </div>
@@ -699,8 +699,8 @@ function LiveSafetyPanel({
           className={`rounded-full border px-4 py-2 text-xs font-bold ${styles.badge}`}
         >
           {policy.allowed
-            ? "âœ“ Allowed"
-            : "âœ• Blocked"}
+            ? "✓ Allowed"
+            : "✕ Blocked"}
         </span>
       </div>
 
@@ -962,14 +962,14 @@ function getStatusIcon(
   status: RecommendationStatus,
 ): string {
   if (status === "Successful") {
-    return "âœ“";
+    return "✓";
   }
 
   if (status === "Unsuccessful") {
-    return "âœ•";
+    return "✕";
   }
 
-  return "â—·";
+  return "◷";
 }
 
 function formatTargetReached(
@@ -1062,7 +1062,7 @@ function Disclosure() {
 
       <p className="mt-3 text-sm leading-6 text-amber-800">
         Live prices are informational. Only quotes
-        that satisfy MarketPilotâ€™s freshness policy
+        that satisfy MarketPilot’s freshness policy
         may generate a live hypothetical result.
         Stored historical results remain unchanged.
       </p>

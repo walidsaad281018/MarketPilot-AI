@@ -18,7 +18,7 @@ export async function GET(
     await context.params;
 
   const recommendation =
-    recommendationService.getRecommendation(
+    await recommendationService.getRecommendation(
       id,
     );
 
