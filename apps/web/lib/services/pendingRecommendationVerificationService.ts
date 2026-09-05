@@ -12,6 +12,7 @@ import {
 
 export type VerifyPendingRecommendationsOptions = {
   currentDate?: Date;
+  symbols?: string[];
 };
 
 export type VerifyPendingRecommendationsResult = {
@@ -49,8 +50,14 @@ export class PendingRecommendationVerificationService {
       verificationService;
   }
 
+  async getPendingRecommendations():
+    Promise<RecommendationRecord[]> {
+    return this.repository.getPending();
+  }
+
   async verifyPending({
     currentDate = new Date(),
+    symbols,
   }: VerifyPendingRecommendationsOptions = {}):
     Promise<VerifyPendingRecommendationsResult> {
     validateCurrentDate(
@@ -58,7 +65,16 @@ export class PendingRecommendationVerificationService {
     );
 
     const pendingRecords =
-      await this.repository.getPending();
+      await this.getPendingRecommendations();
+
+    const verificationSymbols =
+      symbols === undefined
+        ? null
+        : new Set(
+            normalizeUniqueSymbols(
+              symbols,
+            ),
+          );
 
     const eligibleRecords =
       pendingRecords.filter(
@@ -66,6 +82,14 @@ export class PendingRecommendationVerificationService {
           isEvaluationDue(
             recommendation,
             currentDate,
+          ) &&
+          (
+            verificationSymbols === null ||
+            verificationSymbols.has(
+              recommendation.symbol
+                .trim()
+                .toUpperCase(),
+            )
           ),
       );
 
@@ -139,6 +163,26 @@ function hasCompletedVerification(
       null &&
     recommendation.targetReached !==
       null
+  );
+}
+
+function normalizeUniqueSymbols(
+  symbols: string[],
+): string[] {
+  return Array.from(
+    new Set(
+      symbols
+        .map(
+          (symbol) =>
+            symbol
+              .trim()
+              .toUpperCase(),
+        )
+        .filter(
+          (symbol) =>
+            symbol.length > 0,
+        ),
+    ),
   );
 }
 
